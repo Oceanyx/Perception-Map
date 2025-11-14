@@ -61,7 +61,6 @@ export const seedNodes = [
     style: { padding: 12}
   }
 ];
-
 export const seedEdges = [
   { id: "e1", source: "n-1", target: "n-2", animated: false },
   { id: "e2", source: "n-2", target: "n-3", animated: false },
