@@ -58,7 +58,7 @@ export const seedNodes = [
     id: "n-3",
     position: { x: 340, y: 320 },
     data: { label: "Late-night rumination", lensIds: ["aesthetic","empathy"], domainIds: ["private"] },
-    style: { padding: 12 }
+    style: { padding: 12}
   }
 ];
 
