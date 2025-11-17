@@ -1,12 +1,12 @@
 //src/seedData.js
 
-const domainColors = {
+export const domainColors = {
   private: "#FDE68A",
   public: "#BFDBFE",
   abstract: "#C7F9D9"
 };
 
-const seedNodes = [
+export const seedNodes = [
   {
     id: "d-private",
     type: "domain",
@@ -91,7 +91,7 @@ const seedNodes = [
   }
 ];
 
-const seedEdges = [
+export const seedEdges = [
   { id: "e1", source: "n-1", target: "n-2" },
   { id: "e2", source: "n-2", target: "n-3" },
   { id: "e3", source: "n-1", target: "n-3", animated: true }

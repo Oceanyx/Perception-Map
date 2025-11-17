@@ -1,4 +1,6 @@
 // ============ NODE DETAIL PANEL ============
+import React, { useState } from 'react';
+
 export default function NodeDetailPanel({ node, onClose, onUpdate }) {
   const [formData, setFormData] = useState({
     title: node.data.title || '',
