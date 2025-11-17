@@ -1,63 +1,51 @@
-//src/seedData.js
+// src/seedData.js
 
 export const domainColors = {
-  private: "#FDE68A",
-  public: "#BFDBFE",
-  abstract: "#C7F9D9"
+  private: "#FFB84D",
+  public: "#4D9FFF",
+  abstract: "#6EE7B7"
 };
+
+export const defaultLenses = [
+  { id: 'empathy', name: 'Empathy', color: '#EC4899' },
+  { id: 'systems', name: 'Systems', color: '#3B82F6' },
+  { id: 'aesthetic', name: 'Aesthetic', color: '#8B5CF6' }
+];
 
 export const seedNodes = [
   {
     id: "d-private",
     type: "domain",
-    position: { x: 120, y: 120 },
-    width: 700,
-    height: 520,
+    position: { x: 120, y: 200 },
+    width: 400,
+    height: 400,
     data: { label: "Private", domainId: "private" }
   },
   {
     id: "d-public",
     type: "domain",
-    position: { x: 540, y: 120 },
-    width: 700,
-    height: 520,
+    position: { x: 420, y: 200 },
+    width: 400,
+    height: 400,
     data: { label: "Public", domainId: "public" }
   },
   {
     id: "d-abstract",
     type: "domain",
-    position: { x: 330, y: 380 },
-    width: 720,
-    height: 420,
+    position: { x: 270, y: 400 },
+    width: 400,
+    height: 400,
     data: { label: "Abstract", domainId: "abstract" }
-  },
-  { 
-    id: "l-empathy", 
-    type: "lens",
-    position: { x: 200, y: 40 }, 
-    data: { label: "Lens: Empathy", lensId: "empathy", color: "#EC4899" }
-  },
-  { 
-    id: "l-systems", 
-    type: "lens",
-    position: { x: 360, y: 40 }, 
-    data: { label: "Lens: Systems", lensId: "systems", color: "#3B82F6" }
-  },
-  { 
-    id: "l-aesthetic", 
-    type: "lens",
-    position: { x: 520, y: 40 }, 
-    data: { label: "Lens: Aesthetic", lensId: "aesthetic", color: "#8B5CF6" }
   },
   {
     id: "n-1",
     type: "content",
-    position: { x: 320, y: 250 },
+    position: { x: 200, y: 300 },
     data: { 
       title: "Argument with Sam",
       body: "Had a disagreement about project priorities. Felt unheard and frustrated.",
       lensIds: ["empathy"], 
-      domainIds: ["private", "public"],
+      domainIds: ["private"],
       mode: "reflect",
       notes: "Need to follow up tomorrow",
       createdAt: new Date().toISOString()
@@ -66,7 +54,7 @@ export const seedNodes = [
   {
     id: "n-2",
     type: "content",
-    position: { x: 650, y: 280 },
+    position: { x: 750, y: 320 },
     data: { 
       title: "Manager expectations",
       body: "Unclear deliverables for Q4. Need clarification on scope.",
@@ -79,12 +67,12 @@ export const seedNodes = [
   {
     id: "n-3",
     type: "content",
-    position: { x: 480, y: 450 },
+    position: { x: 500, y: 580 },
     data: { 
       title: "Late-night rumination",
       body: "Why do I always worry about things I can't control?",
       lensIds: ["aesthetic", "empathy"], 
-      domainIds: ["private", "abstract"],
+      domainIds: ["abstract"],
       mode: "explore",
       createdAt: new Date().toISOString()
     }
@@ -92,7 +80,7 @@ export const seedNodes = [
 ];
 
 export const seedEdges = [
-  { id: "e1", source: "n-1", target: "n-2" },
-  { id: "e2", source: "n-2", target: "n-3" },
-  { id: "e3", source: "n-1", target: "n-3", animated: true }
+  { id: "e1", source: "n-1", target: "n-2", label: "Related to" },
+  { id: "e2", source: "n-2", target: "n-3", label: "Triggers" },
+  { id: "e3", source: "n-1", target: "n-3", label: "Connects to" }
 ];

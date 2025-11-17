@@ -1,20 +1,58 @@
+// src/components/CanvasView.jsx
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { seedNodes, seedEdges, domainColors } from '../seedData';
+import { Plus, Filter, BarChart3, Edit2 } from 'lucide-react';
 import NodeDetailPanel from './NodeDetailPanel';
 import Node from './Node';
+import AnalyticsPanel from './AnalyticsPanel';
+import LensManager from './LensManager';
+import { domainColors, defaultLenses } from '../seedData';
+import { 
+  db, 
+  initializeDB, 
+  getAllNodes, 
+  getAllEdges, 
+  getAllLenses,
+  addNode,
+  updateNode as dbUpdateNode,
+  addEdge,
+  deleteEdge as dbDeleteEdge,
+  updateLenses as dbUpdateLenses
+} from '../lib/db';
 
-// ============ MAIN APP ============
-export default function PerceptionMap() {
-  const [nodes, setNodes] = useState(seedNodes);
-  const [edges] = useState(seedEdges);
+export default function CanvasView() {
+  const [nodes, setNodes] = useState([]);
+  const [edges, setEdges] = useState([]);
+  const [lenses, setLenses] = useState(defaultLenses);
   const [selectedNode, setSelectedNode] = useState(null);
   const [activeLensIds, setActiveLensIds] = useState([]);
+  const [activeFilters, setActiveFilters] = useState({ domains: [], modes: [] });
   const [draggingNode, setDraggingNode] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showLensManager, setShowLensManager] = useState(false);
+  const [viewMode, setViewMode] = useState('all');
   const canvasRef = useRef(null);
 
+  // Initialize database and load data
+  useEffect(() => {
+    async function loadData() {
+      await initializeDB();
+      const loadedNodes = await getAllNodes();
+      const loadedEdges = await getAllEdges();
+      const loadedLenses = await getAllLenses();
+      
+      setNodes(loadedNodes);
+      setEdges(loadedEdges);
+      if (loadedLenses.length > 0) {
+        setLenses(loadedLenses);
+      }
+    }
+    loadData();
+  }, []);
+
   const blendColors = useCallback((domainIds) => {
-    if (!domainIds || domainIds.length === 0) return '#071022';
+    if (!domainIds || domainIds.length === 0) return '#1E293B';
     if (domainIds.length === 1) {
       const color = domainColors[domainIds[0]];
       return `linear-gradient(180deg, ${color}25, ${color}15)`;
@@ -63,7 +101,7 @@ export default function PerceptionMap() {
     }
   };
 
-  const handleDragEnd = (e, node) => {
+  const handleDragEnd = async (e, node) => {
     if (node.type === 'content' && canvasRef.current) {
       const canvasRect = canvasRef.current.getBoundingClientRect();
       const newX = e.clientX - canvasRect.left - dragOffset.x;
@@ -72,6 +110,8 @@ export default function PerceptionMap() {
       const newPos = { x: newX, y: newY };
       const domainIds = getDomainsAtPosition(newPos);
 
+      await dbUpdateNode(node.id, { position: newPos, data: { ...node.data, domainIds } });
+      
       setNodes(current => current.map(n => 
         n.id === node.id
           ? { ...n, position: newPos, data: { ...n.data, domainIds } }
@@ -82,17 +122,13 @@ export default function PerceptionMap() {
   };
 
   const handleNodeClick = (node) => {
-    if (node.type === 'lens') {
-      const lensId = node.data.lensId;
-      setActiveLensIds(prev => 
-        prev.includes(lensId) ? prev.filter(id => id !== lensId) : [...prev, lensId]
-      );
-    } else if (node.type === 'content') {
+    if (node.type === 'content') {
       setSelectedNode(node);
     }
   };
 
-  const handleUpdateNode = useCallback((nodeId, newData) => {
+  const handleUpdateNode = useCallback(async (nodeId, newData) => {
+    await dbUpdateNode(nodeId, { data: newData });
     setNodes(current => current.map(node => 
       node.id === nodeId 
         ? { ...node, data: { ...node.data, ...newData } }
@@ -100,7 +136,42 @@ export default function PerceptionMap() {
     ));
   }, []);
 
-  // Get node center position
+  const handleCreateEdge = useCallback(async (newEdge) => {
+    await addEdge(newEdge);
+    setEdges(current => [...current, newEdge]);
+  }, []);
+
+  const handleDeleteEdge = useCallback(async (edgeId) => {
+    await dbDeleteEdge(edgeId);
+    setEdges(current => current.filter(e => e.id !== edgeId));
+  }, []);
+
+  const handleUpdateLenses = useCallback(async (newLenses) => {
+    await dbUpdateLenses(newLenses);
+    setLenses(newLenses);
+  }, []);
+
+  const handleCreateNode = async () => {
+    const newNode = {
+      type: 'content',
+      position: { x: 400, y: 300 },
+      data: {
+        title: 'New Node',
+        body: '',
+        lensIds: [],
+        domainIds: [],
+        mode: 'capture',
+        notes: '',
+        createdAt: new Date().toISOString()
+      }
+    };
+    
+    const id = await addNode(newNode);
+    const nodeWithId = { ...newNode, id };
+    setNodes(current => [...current, nodeWithId]);
+    setSelectedNode(nodeWithId);
+  };
+
   const getNodeCenter = (node) => {
     const width = node.type === 'content' ? 210 : 100;
     const height = node.type === 'content' ? 80 : 40;
@@ -110,19 +181,265 @@ export default function PerceptionMap() {
     };
   };
 
+  const toggleFilter = (type, value) => {
+    setActiveFilters(prev => {
+      const current = prev[type];
+      return {
+        ...prev,
+        [type]: current.includes(value) 
+          ? current.filter(v => v !== value)
+          : [...current, value]
+      };
+    });
+  };
+
+  const filteredNodes = nodes.filter(node => {
+    if (node.type !== 'content') return true;
+    
+    if (viewMode !== 'all' && !node.data.domainIds?.includes(viewMode)) {
+      return false;
+    }
+
+    if (activeFilters.domains.length > 0) {
+      const hasMatchingDomain = activeFilters.domains.some(d => 
+        node.data.domainIds?.includes(d)
+      );
+      if (!hasMatchingDomain) return false;
+    }
+
+    if (activeFilters.modes.length > 0) {
+      if (!activeFilters.modes.includes(node.data.mode)) return false;
+    }
+
+    return true;
+  });
+
   return (
     <div style={{ 
-      width: '100vw', 
-      height: '100vh', 
+      width: '100%', 
+      height: '100%', 
       background: '#0F1724',
       overflow: 'hidden',
-      position: 'relative'
+      position: 'relative',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
+      {/* Top Navigation Bar */}
+      <div style={{
+        height: '60px',
+        background: '#1E293B',
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 20px',
+        zIndex: 100
+      }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {['all', 'private', 'public', 'abstract'].map(mode => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              style={{
+                padding: '8px 16px',
+                background: viewMode === mode ? '#6C63FF' : 'transparent',
+                border: viewMode === mode ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '8px',
+                color: '#E6EEF8',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: viewMode === mode ? 600 : 400,
+                textTransform: 'capitalize'
+              }}
+            >
+              {mode === 'all' ? 'All Domains' : mode}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {lenses.map(lens => (
+            <button
+              key={lens.id}
+              onClick={() => setActiveLensIds(prev => 
+                prev.includes(lens.id) ? prev.filter(id => id !== lens.id) : [...prev, lens.id]
+              )}
+              style={{
+                padding: '6px 12px',
+                background: activeLensIds.includes(lens.id) ? lens.color : 'transparent',
+                border: `1px solid ${activeLensIds.includes(lens.id) ? lens.color : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: '6px',
+                color: '#E6EEF8',
+                cursor: 'pointer',
+                fontSize: '13px'
+              }}
+            >
+              {lens.name}
+            </button>
+          ))}
+
+          <button
+            onClick={() => setShowLensManager(true)}
+            style={{
+              padding: '8px',
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '6px',
+              color: '#94A3B8',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <Edit2 size={16} />
+          </button>
+
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            style={{
+              padding: '8px 12px',
+              background: showFilters ? '#6C63FF' : 'transparent',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '6px',
+              color: '#E6EEF8',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '14px'
+            }}
+          >
+            <Filter size={16} /> Filter
+          </button>
+
+          <button
+            onClick={() => setShowAnalytics(true)}
+            style={{
+              padding: '8px 12px',
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '6px',
+              color: '#E6EEF8',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '14px'
+            }}
+          >
+            <BarChart3 size={16} /> Analytics
+          </button>
+
+          <button
+            onClick={handleCreateNode}
+            style={{
+              padding: '8px 12px',
+              background: '#10B981',
+              border: 'none',
+              borderRadius: '6px',
+              color: '#fff',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '14px',
+              fontWeight: 500
+            }}
+          >
+            <Plus size={16} /> New Node
+          </button>
+        </div>
+      </div>
+
+      {/* Filters Dropdown */}
+      {showFilters && (
+        <div style={{
+          position: 'absolute',
+          top: '70px',
+          right: '20px',
+          width: '300px',
+          background: '#1E293B',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '12px',
+          padding: '16px',
+          zIndex: 1001,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
+        }}>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '8px', fontWeight: 600 }}>
+              Domains
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {['private', 'public', 'abstract'].map(domain => (
+                <button
+                  key={domain}
+                  onClick={() => toggleFilter('domains', domain)}
+                  style={{
+                    padding: '6px 12px',
+                    background: activeFilters.domains.includes(domain) ? domainColors[domain] : '#0F1724',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '6px',
+                    color: activeFilters.domains.includes(domain) ? '#000' : '#E6EEF8',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    textTransform: 'capitalize'
+                  }}
+                >
+                  {domain}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '8px', fontWeight: 600 }}>
+              Modes
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {['capture', 'reflect', 'explore'].map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => toggleFilter('modes', mode)}
+                  style={{
+                    padding: '6px 12px',
+                    background: activeFilters.modes.includes(mode) ? '#6C63FF' : '#0F1724',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '6px',
+                    color: '#E6EEF8',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    textTransform: 'capitalize'
+                  }}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setActiveFilters({ domains: [], modes: [] })}
+            style={{
+              width: '100%',
+              padding: '8px',
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '6px',
+              color: '#94A3B8',
+              cursor: 'pointer',
+              fontSize: '13px'
+            }}
+          >
+            Clear All Filters
+          </button>
+        </div>
+      )}
+
+      {/* Canvas */}
       <div 
         ref={canvasRef}
         style={{ 
-          width: '100%', 
-          height: '100%', 
+          flex: 1,
           position: 'relative',
           backgroundImage: `
             radial-gradient(circle, rgba(30, 41, 59, 0.5) 1px, transparent 1px)
@@ -130,7 +447,6 @@ export default function PerceptionMap() {
           backgroundSize: '20px 20px'
         }}
       >
-        {/* SVG for connections */}
         <svg style={{ 
           position: 'absolute', 
           top: 0, 
@@ -141,31 +457,42 @@ export default function PerceptionMap() {
           zIndex: 1
         }}>
           {edges.map(edge => {
-            const source = nodes.find(n => n.id === edge.source);
-            const target = nodes.find(n => n.id === edge.target);
+            const source = filteredNodes.find(n => n.id === edge.source);
+            const target = filteredNodes.find(n => n.id === edge.target);
             if (!source || !target) return null;
             
             const start = getNodeCenter(source);
             const end = getNodeCenter(target);
             
             return (
-              <line
-                key={edge.id}
-                x1={start.x}
-                y1={start.y}
-                x2={end.x}
-                y2={end.y}
-                stroke={edge.animated ? '#6C63FF' : '#334155'}
-                strokeWidth={edge.animated ? 2 : 1}
-                strokeDasharray={edge.animated ? '5,5' : 'none'}
-                opacity={0.6}
-              />
+              <g key={edge.id}>
+                <line
+                  x1={start.x}
+                  y1={start.y}
+                  x2={end.x}
+                  y2={end.y}
+                  stroke="#475569"
+                  strokeWidth={2}
+                  opacity={0.4}
+                />
+                {edge.label && (
+                  <text
+                    x={(start.x + end.x) / 2}
+                    y={(start.y + end.y) / 2}
+                    fill="#94A3B8"
+                    fontSize="11px"
+                    textAnchor="middle"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    {edge.label}
+                  </text>
+                )}
+              </g>
             );
           })}
         </svg>
 
-        {/* Render all nodes */}
-        {nodes.map(node => (
+        {filteredNodes.map(node => (
           <Node
             key={node.id}
             node={node}
@@ -175,63 +502,37 @@ export default function PerceptionMap() {
             isDragging={draggingNode === node.id}
             activeLensIds={activeLensIds}
             blendColors={blendColors}
+            lenses={lenses}
           />
         ))}
       </div>
 
-      {/* Active Lenses Indicator */}
-      {activeLensIds.length > 0 && (
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(10px)',
-          padding: '12px 16px',
-          borderRadius: '10px',
-          border: '1px solid rgba(255,255,255,0.1)',
-          zIndex: 1000
-        }}>
-          <div style={{ color: '#94A3B8', fontSize: '11px', marginBottom: '6px' }}>
-            Active Lenses
-          </div>
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            {activeLensIds.map(id => (
-              <div key={id} style={{
-                padding: '4px 8px',
-                background: '#6C63FF',
-                borderRadius: '6px',
-                fontSize: '12px',
-                color: '#fff',
-                textTransform: 'capitalize'
-              }}>
-                {id}
-              </div>
-            ))}
-            <button
-              onClick={() => setActiveLensIds([])}
-              style={{
-                padding: '4px 8px',
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '6px',
-                color: '#94A3B8',
-                fontSize: '11px',
-                cursor: 'pointer'
-              }}
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Node Detail Panel */}
       {selectedNode && (
         <NodeDetailPanel
           node={selectedNode}
           onClose={() => setSelectedNode(null)}
           onUpdate={handleUpdateNode}
+          lenses={lenses}
+          edges={edges}
+          nodes={nodes}
+          onDeleteEdge={handleDeleteEdge}
+          onCreateEdge={handleCreateEdge}
+        />
+      )}
+
+      {showAnalytics && (
+        <AnalyticsPanel
+          nodes={nodes}
+          lenses={lenses}
+          onClose={() => setShowAnalytics(false)}
+        />
+      )}
+
+      {showLensManager && (
+        <LensManager
+          lenses={lenses}
+          onClose={() => setShowLensManager(false)}
+          onUpdate={handleUpdateLenses}
         />
       )}
     </div>

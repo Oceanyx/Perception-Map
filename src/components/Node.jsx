@@ -1,14 +1,8 @@
-// ============ NODE COMPONENT ============
+// src/components/Node.jsx
 import React from 'react';
 import { domainColors } from '../seedData';
 
-export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging, activeLensIds, blendColors }) {
-  const lensColors = {
-    empathy: '#EC4899',
-    systems: '#3B82F6',
-    aesthetic: '#8B5CF6'
-  };
-
+export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging, activeLensIds, blendColors, lenses }) {
   const modeIcons = {
     capture: '📝',
     reflect: '🤔',
@@ -17,6 +11,7 @@ export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging
 
   if (node.type === 'domain') {
     const color = domainColors[node.data.domainId];
+    
     return (
       <div
         style={{
@@ -25,67 +20,47 @@ export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging
           top: node.position.y,
           width: node.width,
           height: node.height,
-          borderRadius: node.data.domainId === 'abstract' ? '30%' : '50%',
-          background: color,
-          opacity: 0.12,
+          borderRadius: '50%',
+          background: `${color}18`,
+          border: `2px dashed ${color}40`,
           pointerEvents: 'none',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'center',
-          fontSize: '48px',
-          fontWeight: 700,
+          paddingTop: '30px'
+        }}
+      >
+        <span style={{ 
+          fontSize: '18px', 
+          fontWeight: 700, 
           color: color,
-          userSelect: 'none'
-        }}
-      >
-        <span style={{ opacity: 0.3 }}>{node.data.label}</span>
+          opacity: 0.6,
+          textTransform: 'uppercase',
+          letterSpacing: '2px'
+        }}>
+          {node.data.label}
+        </span>
       </div>
     );
   }
 
-  if (node.type === 'lens') {
-    return (
-      <div
-        onClick={() => onClick(node)}
-        style={{
-          position: 'absolute',
-          left: node.position.x,
-          top: node.position.y,
-          padding: '8px 14px',
-          background: activeLensIds.includes(node.data.lensId) ? node.data.color : '#0B1220',
-          border: `2px solid ${activeLensIds.includes(node.data.lensId) ? node.data.color : 'rgba(255,255,255,0.1)'}`,
-          borderRadius: '20px',
-          color: '#E6EEF8',
-          cursor: 'pointer',
-          fontSize: '13px',
-          fontWeight: 500,
-          transition: 'all 0.2s',
-          userSelect: 'none',
-          boxShadow: activeLensIds.includes(node.data.lensId) ? '0 4px 12px rgba(0,0,0,0.3)' : 'none'
-        }}
-      >
-        {node.data.label}
-      </div>
-    );
-  }
-
-  // Content node
   const domainIds = node.data?.domainIds || [];
   const lensIds = node.data?.lensIds || [];
   const matches = lensIds.filter(l => activeLensIds.includes(l)).length;
 
   let background = blendColors(domainIds);
-  let border = '1px solid rgba(255,255,255,0.08)';
-  let boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+  let border = '1px solid rgba(255,255,255,0.15)';
+  let boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
 
   if (matches === 1) {
-    border = '2px solid #6C63FF';
-    boxShadow = '0 6px 20px rgba(108,99,255,0.2)';
+    const activeLens = lenses.find(l => activeLensIds.includes(l.id) && lensIds.includes(l.id));
+    border = activeLens ? `2px solid ${activeLens.color}` : '2px solid #6C63FF';
+    boxShadow = `0 6px 20px ${activeLens?.color}40`;
   } else if (matches > 1) {
     border = '3px solid #00BFA6';
-    boxShadow = '0 10px 30px rgba(0,191,166,0.25)';
+    boxShadow = '0 10px 30px rgba(0,191,166,0.3)';
   } else if (activeLensIds.length > 0) {
-    background = 'rgba(7,16,34,0.5)';
+    background = 'rgba(15,23,36,0.7)';
   }
 
   return (
@@ -103,13 +78,13 @@ export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging
         background,
         border,
         boxShadow,
-        borderRadius: '10px',
+        borderRadius: '12px',
         cursor: isDragging ? 'grabbing' : 'grab',
         opacity: isDragging ? 0.6 : 1,
-        zIndex: isDragging ? 1000 : 10
+        zIndex: isDragging ? 1000 : 10,
+        transition: 'all 0.2s'
       }}
     >
-      {/* Badges */}
       <div style={{
         position: 'absolute',
         top: '-8px',
@@ -121,10 +96,10 @@ export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging
         {node.data.mode && (
           <div style={{
             padding: '2px 6px',
-            background: '#0F172A',
+            background: '#1E293B',
             borderRadius: '4px',
             fontSize: '11px',
-            border: '1px solid rgba(255,255,255,0.1)',
+            border: '1px solid rgba(255,255,255,0.2)',
             display: 'flex',
             alignItems: 'center',
             gap: '3px'
@@ -134,25 +109,27 @@ export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging
           </div>
         )}
         
-        {lensIds?.map(lensId => (
-          <div
-            key={lensId}
-            style={{
-              padding: '2px 6px',
-              background: lensColors[lensId] || '#6C63FF',
-              borderRadius: '4px',
-              fontSize: '11px',
-              color: '#fff',
-              fontWeight: 500,
-              textTransform: 'capitalize'
-            }}
-          >
-            {lensId}
-          </div>
-        ))}
+        {lensIds?.map(lensId => {
+          const lens = lenses.find(l => l.id === lensId);
+          return lens ? (
+            <div
+              key={lensId}
+              style={{
+                padding: '2px 6px',
+                background: lens.color,
+                borderRadius: '4px',
+                fontSize: '11px',
+                color: '#fff',
+                fontWeight: 500,
+                textTransform: 'capitalize'
+              }}
+            >
+              {lens.name}
+            </div>
+          ) : null;
+        })}
       </div>
 
-      {/* Content */}
       <div style={{ 
         padding: '16px 12px 12px 12px',
         color: '#E6EEF8'
