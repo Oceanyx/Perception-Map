@@ -1,0 +1,48 @@
+{
+  "tokens": {
+    "primary": "#6C63FF",
+    "accent": "#00BFA6",
+    "neutral900": "#0F1724",
+    "background": "#F8FAFC"
+  },
+  "components": [
+    {
+      "name": "TopBar",
+      "height": 72,
+      "elements": [
+        "logo",
+        "title",
+        "modeSelector",
+        "quickCaptureButton"
+      ]
+    },
+    {
+      "name": "Sidebar",
+      "width": 280,
+      "sections": [
+        "domains",
+        "lenses",
+        "lensStack"
+      ]
+    },
+    {
+      "name": "NodeCard",
+      "size": "min-140x72",
+      "fields": [
+        "title",
+        "tags",
+        "lensBadges"
+      ]
+    },
+    {
+      "name": "Inspector",
+      "width": 360,
+      "fields": [
+        "title",
+        "body",
+        "lenses",
+        "history"
+      ]
+    }
+  ]
+}
