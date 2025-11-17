@@ -14,6 +14,7 @@ import {
   getAllLenses,
   addNode,
   updateNode as dbUpdateNode,
+  deleteNode as dbDeleteNode,
   addEdge,
   deleteEdge as dbDeleteEdge,
   updateLenses as dbUpdateLenses
@@ -69,11 +70,18 @@ export default function CanvasView() {
   }, []);
 
   const getDomainBounds = useCallback((domainNode) => {
+    const radius = domainNode.width / 2;
+    const centerX = domainNode.position.x + radius;
+    const centerY = domainNode.position.y + radius;
+    
     return {
+      centerX,
+      centerY,
+      radius,
       left: domainNode.position.x,
       top: domainNode.position.y,
       right: domainNode.position.x + domainNode.width,
-      bottom: domainNode.position.y + domainNode.height
+      bottom: domainNode.position.y + domainNode.width // Changed from height to width
     };
   }, []);
 
@@ -82,8 +90,12 @@ export default function CanvasView() {
     const hits = [];
     for (const d of domainNodes) {
       const bounds = getDomainBounds(d);
-      if (pos.x >= bounds.left && pos.x <= bounds.right && 
-          pos.y >= bounds.top && pos.y <= bounds.bottom) {
+      // Check if point is within circle using distance formula
+      const dx = pos.x - bounds.centerX;
+      const dy = pos.y - bounds.centerY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance <= bounds.radius) {
         hits.push(d.data.domainId);
       }
     }
@@ -136,6 +148,12 @@ export default function CanvasView() {
     ));
   }, []);
 
+  const handleDeleteNode = useCallback(async (nodeId) => {
+    await dbDeleteNode(nodeId);
+    setNodes(current => current.filter(n => n.id !== nodeId));
+    setEdges(current => current.filter(e => e.source !== nodeId && e.target !== nodeId));
+  }, []);
+
   const handleCreateEdge = useCallback(async (newEdge) => {
     await addEdge(newEdge);
     setEdges(current => [...current, newEdge]);
@@ -158,7 +176,7 @@ export default function CanvasView() {
       data: {
         title: 'New Node',
         body: '',
-        lensIds: [],
+        lensIds: [lenses[0]?.id || 'empathy'],
         domainIds: [],
         mode: 'capture',
         notes: '',
@@ -512,6 +530,7 @@ export default function CanvasView() {
           node={selectedNode}
           onClose={() => setSelectedNode(null)}
           onUpdate={handleUpdateNode}
+          onDelete={handleDeleteNode}
           lenses={lenses}
           edges={edges}
           nodes={nodes}

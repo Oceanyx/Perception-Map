@@ -16,36 +16,36 @@ export const seedNodes = [
   {
     id: "d-private",
     type: "domain",
-    position: { x: 120, y: 200 },
-    width: 400,
-    height: 400,
+    position: { x: 150, y: 200 },
+    width: 450,
+    height: 450,
     data: { label: "Private", domainId: "private" }
   },
   {
     id: "d-public",
     type: "domain",
-    position: { x: 420, y: 200 },
-    width: 400,
-    height: 400,
+    position: { x: 400, y: 200 },
+    width: 450,
+    height: 450,
     data: { label: "Public", domainId: "public" }
   },
   {
     id: "d-abstract",
     type: "domain",
-    position: { x: 270, y: 400 },
-    width: 400,
-    height: 400,
+    position: { x: 275, y: 380 },
+    width: 450,
+    height: 450,
     data: { label: "Abstract", domainId: "abstract" }
   },
   {
     id: "n-1",
     type: "content",
-    position: { x: 200, y: 300 },
+    position: { x: 420, y: 340 },
     data: { 
       title: "Argument with Sam",
       body: "Had a disagreement about project priorities. Felt unheard and frustrated.",
       lensIds: ["empathy"], 
-      domainIds: ["private"],
+      domainIds: ["private", "public"],
       mode: "reflect",
       notes: "Need to follow up tomorrow",
       createdAt: new Date().toISOString()
@@ -54,7 +54,7 @@ export const seedNodes = [
   {
     id: "n-2",
     type: "content",
-    position: { x: 750, y: 320 },
+    position: { x: 580, y: 320 },
     data: { 
       title: "Manager expectations",
       body: "Unclear deliverables for Q4. Need clarification on scope.",
@@ -67,12 +67,12 @@ export const seedNodes = [
   {
     id: "n-3",
     type: "content",
-    position: { x: 500, y: 580 },
+    position: { x: 450, y: 520 },
     data: { 
       title: "Late-night rumination",
       body: "Why do I always worry about things I can't control?",
       lensIds: ["aesthetic", "empathy"], 
-      domainIds: ["abstract"],
+      domainIds: ["abstract", "private"],
       mode: "explore",
       createdAt: new Date().toISOString()
     }

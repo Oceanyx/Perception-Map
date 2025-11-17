@@ -41,6 +41,11 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
   };
 
   const handleSave = () => {
+    // Ensure at least one lens is selected
+    if (formData.lensIds.length === 0) {
+      alert('Please select at least one lens');
+      return;
+    }
     onUpdate(node.id, formData);
     onClose();
   };
@@ -74,7 +79,7 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
       right: 0,
       top: '60px',
       bottom: 0,
-      width: '380px',
+      width: '420px',
       background: '#0F1724',
       boxShadow: '-4px 0 24px rgba(0,0,0,0.3)',
       zIndex: 2000,
@@ -120,7 +125,7 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-        <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#94A3B8' }}>
             Title
           </label>
@@ -129,17 +134,18 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
             onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
             style={{
               width: '100%',
-              padding: '10px',
+              padding: '10px 12px',
               background: '#1E293B',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '8px',
               color: '#E6EEF8',
-              fontSize: '14px'
+              fontSize: '14px',
+              boxSizing: 'border-box'
             }}
           />
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#94A3B8' }}>
             Description
           </label>
@@ -149,18 +155,19 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
             rows={4}
             style={{
               width: '100%',
-              padding: '10px',
+              padding: '10px 12px',
               background: '#1E293B',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '8px',
               color: '#E6EEF8',
               fontSize: '14px',
-              resize: 'vertical'
+              resize: 'vertical',
+              boxSizing: 'border-box'
             }}
           />
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#94A3B8' }}>
             Mode
           </label>
@@ -169,12 +176,13 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
             onChange={e => setFormData(prev => ({ ...prev, mode: e.target.value }))}
             style={{
               width: '100%',
-              padding: '10px',
+              padding: '10px 12px',
               background: '#1E293B',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '8px',
               color: '#E6EEF8',
-              fontSize: '14px'
+              fontSize: '14px',
+              boxSizing: 'border-box'
             }}
           >
             <option value="capture">Capture</option>
@@ -183,7 +191,7 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
           </select>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#94A3B8' }}>
             Domains
           </label>
@@ -193,7 +201,7 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
                 key={domain.id}
                 onClick={() => toggleDomain(domain.id)}
                 style={{
-                  padding: '6px 12px',
+                  padding: '8px 14px',
                   background: formData.domainIds.includes(domain.id) ? domainColors[domain.id] : '#1E293B',
                   border: '1px solid rgba(255,255,255,0.1)',
                   borderRadius: '6px',
@@ -209,9 +217,9 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
           </div>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#94A3B8' }}>
-            Lenses
+            Lenses {formData.lensIds.length === 0 && <span style={{ color: '#EF4444' }}>*Required</span>}
           </label>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {lenses.map(lens => (
@@ -219,13 +227,14 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
                 key={lens.id}
                 onClick={() => toggleLens(lens.id)}
                 style={{
-                  padding: '6px 12px',
+                  padding: '8px 14px',
                   background: formData.lensIds.includes(lens.id) ? lens.color : '#1E293B',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  border: `1px solid ${formData.lensIds.includes(lens.id) ? lens.color : 'rgba(255,255,255,0.1)'}`,
                   borderRadius: '6px',
                   color: '#E6EEF8',
                   cursor: 'pointer',
-                  fontSize: '13px'
+                  fontSize: '13px',
+                  fontWeight: formData.lensIds.includes(lens.id) ? 600 : 400
                 }}
               >
                 {lens.name}
@@ -234,7 +243,7 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
           </div>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#94A3B8' }}>
             Notes
           </label>
@@ -245,18 +254,19 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
             placeholder="Additional notes..."
             style={{
               width: '100%',
-              padding: '10px',
+              padding: '10px 12px',
               background: '#1E293B',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '8px',
               color: '#E6EEF8',
               fontSize: '14px',
-              resize: 'vertical'
+              resize: 'vertical',
+              boxSizing: 'border-box'
             }}
           />
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <div style={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -303,7 +313,8 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
                   borderRadius: '6px',
                   color: '#E6EEF8',
                   fontSize: '13px',
-                  marginBottom: '8px'
+                  marginBottom: '8px',
+                  boxSizing: 'border-box'
                 }}
               >
                 <option value="">Select node...</option>
@@ -323,7 +334,8 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
                   borderRadius: '6px',
                   color: '#E6EEF8',
                   fontSize: '13px',
-                  marginBottom: '8px'
+                  marginBottom: '8px',
+                  boxSizing: 'border-box'
                 }}
               />
               <button
@@ -390,13 +402,13 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
         padding: '20px',
         borderTop: '1px solid rgba(255,255,255,0.1)',
         display: 'flex',
-        gap: '10px'
+        gap: '12px'
       }}>
         <button
           onClick={onClose}
           style={{
             flex: 1,
-            padding: '10px',
+            padding: '12px',
             background: 'transparent',
             border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '8px',
@@ -411,7 +423,7 @@ export default function NodeDetailPanel({ node, onClose, onUpdate, onDelete, len
           onClick={handleSave}
           style={{
             flex: 1,
-            padding: '10px',
+            padding: '12px',
             background: '#6C63FF',
             border: 'none',
             borderRadius: '8px',

@@ -1,6 +1,7 @@
 // src/components/Node.jsx
 import React from 'react';
 import { domainColors } from '../seedData';
+import { Heart, MessageCircle, Brain } from 'lucide-react';
 
 export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging, activeLensIds, blendColors, lenses }) {
   const modeIcons = {
@@ -9,8 +10,15 @@ export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging
     explore: '🔍'
   };
 
+  const domainIcons = {
+    private: Heart,
+    public: MessageCircle,
+    abstract: Brain
+  };
+
   if (node.type === 'domain') {
     const color = domainColors[node.data.domainId];
+    const Icon = domainIcons[node.data.domainId];
     
     return (
       <div
@@ -19,17 +27,19 @@ export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging
           left: node.position.x,
           top: node.position.y,
           width: node.width,
-          height: node.height,
+          height: node.width, // USE WIDTH FOR BOTH to ensure perfect circle
           borderRadius: '50%',
           background: `${color}18`,
           border: `2px dashed ${color}40`,
           pointerEvents: 'none',
           display: 'flex',
-          alignItems: 'flex-start',
+          flexDirection: 'column',
+          alignItems: 'center',
           justifyContent: 'center',
-          paddingTop: '30px'
+          gap: '8px'
         }}
       >
+        {Icon && <Icon size={24} color={color} opacity={0.6} />}
         <span style={{ 
           fontSize: '18px', 
           fontWeight: 700, 
