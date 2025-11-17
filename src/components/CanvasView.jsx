@@ -1,6 +1,6 @@
 // src/components/CanvasView.jsx
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Plus, Filter, BarChart3, Edit2 } from 'lucide-react';
+import { Plus, Filter, BarChart3, Edit2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import NodeDetailPanel from './NodeDetailPanel';
 import Node from './Node';
 import AnalyticsPanel from './AnalyticsPanel';
@@ -25,6 +25,7 @@ export default function CanvasView() {
   const [edges, setEdges] = useState([]);
   const [lenses, setLenses] = useState(defaultLenses);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [hoveredNode, setHoveredNode] = useState(null);
   const [activeLensIds, setActiveLensIds] = useState([]);
   const [activeFilters, setActiveFilters] = useState({ domains: [], modes: [] });
   const [draggingNode, setDraggingNode] = useState(null);
@@ -33,7 +34,12 @@ export default function CanvasView() {
   const [showFilters, setShowFilters] = useState(false);
   const [showLensManager, setShowLensManager] = useState(false);
   const [viewMode, setViewMode] = useState('all');
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
 
   // Initialize database and load data
   useEffect(() => {
@@ -50,6 +56,23 @@ export default function CanvasView() {
       }
     }
     loadData();
+  }, []);
+
+  // Zoom with mouse wheel
+  useEffect(() => {
+    const handleWheel = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        setZoom(prev => Math.min(Math.max(0.3, prev + delta), 3));
+      }
+    };
+
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.addEventListener('wheel', handleWheel, { passive: false });
+      return () => canvas.removeEventListener('wheel', handleWheel);
+    }
   }, []);
 
   const blendColors = useCallback((domainIds) => {
@@ -81,7 +104,7 @@ export default function CanvasView() {
       left: domainNode.position.x,
       top: domainNode.position.y,
       right: domainNode.position.x + domainNode.width,
-      bottom: domainNode.position.y + domainNode.width // Changed from height to width
+      bottom: domainNode.position.y + domainNode.width
     };
   }, []);
 
@@ -90,7 +113,6 @@ export default function CanvasView() {
     const hits = [];
     for (const d of domainNodes) {
       const bounds = getDomainBounds(d);
-      // Check if point is within circle using distance formula
       const dx = pos.x - bounds.centerX;
       const dy = pos.y - bounds.centerY;
       const distance = Math.sqrt(dx * dx + dy * dy);
@@ -104,6 +126,7 @@ export default function CanvasView() {
 
   const handleDragStart = (e, node) => {
     if (node.type === 'content') {
+      e.stopPropagation();
       setDraggingNode(node.id);
       const rect = e.currentTarget.getBoundingClientRect();
       setDragOffset({
@@ -116,8 +139,8 @@ export default function CanvasView() {
   const handleDragEnd = async (e, node) => {
     if (node.type === 'content' && canvasRef.current) {
       const canvasRect = canvasRef.current.getBoundingClientRect();
-      const newX = e.clientX - canvasRect.left - dragOffset.x;
-      const newY = e.clientY - canvasRect.top - dragOffset.y;
+      const newX = (e.clientX - canvasRect.left - dragOffset.x - pan.x) / zoom;
+      const newY = (e.clientY - canvasRect.top - dragOffset.y - pan.y) / zoom;
       
       const newPos = { x: newX, y: newY };
       const domainIds = getDomainsAtPosition(newPos);
@@ -133,10 +156,21 @@ export default function CanvasView() {
     setDraggingNode(null);
   };
 
-  const handleNodeClick = (node) => {
+  const handleNodeClick = (node, e) => {
+    e.stopPropagation();
     if (node.type === 'content') {
       setSelectedNode(node);
     }
+  };
+
+  const handleNodeHover = (node) => {
+    if (node.type === 'content') {
+      setHoveredNode(node.id);
+    }
+  };
+
+  const handleNodeLeave = () => {
+    setHoveredNode(null);
   };
 
   const handleUpdateNode = useCallback(async (nodeId, newData) => {
@@ -172,7 +206,7 @@ export default function CanvasView() {
   const handleCreateNode = async () => {
     const newNode = {
       type: 'content',
-      position: { x: 400, y: 300 },
+      position: { x: (400 - pan.x) / zoom, y: (300 - pan.y) / zoom },
       data: {
         title: 'New Node',
         body: '',
@@ -231,6 +265,34 @@ export default function CanvasView() {
 
     return true;
   });
+
+  // Pan controls - FIXED
+  const handleCanvasMouseDown = (e) => {
+    // Only start panning if clicking directly on the canvas container, not on nodes
+    if (e.target === containerRef.current || e.target === canvasRef.current) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      e.preventDefault();
+    }
+  };
+
+  const handleCanvasMouseMove = (e) => {
+    if (isPanning) {
+      setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+    }
+  };
+
+  const handleCanvasMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  // Zoom controls
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.2, 3));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.2, 0.3));
+  const handleResetView = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
 
   return (
     <div style={{ 
@@ -453,76 +515,182 @@ export default function CanvasView() {
         </div>
       )}
 
-      {/* Canvas */}
+      {/* Zoom Controls */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        right: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        zIndex: 100
+      }}>
+        <button
+          onClick={handleZoomIn}
+          style={{
+            padding: '10px',
+            background: '#1E293B',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            color: '#E6EEF8',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          title="Zoom In"
+        >
+          <ZoomIn size={20} />
+        </button>
+        <button
+          onClick={handleResetView}
+          style={{
+            padding: '10px',
+            background: '#1E293B',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            color: '#E6EEF8',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          title="Reset View"
+        >
+          <Maximize2 size={20} />
+        </button>
+        <button
+          onClick={handleZoomOut}
+          style={{
+            padding: '10px',
+            background: '#1E293B',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            color: '#E6EEF8',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          title="Zoom Out"
+        >
+          <ZoomOut size={20} />
+        </button>
+        <div style={{
+          padding: '8px',
+          background: '#1E293B',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '8px',
+          color: '#94A3B8',
+          fontSize: '12px',
+          textAlign: 'center'
+        }}>
+          {Math.round(zoom * 100)}%
+        </div>
+      </div>
+
+      {/* Canvas - FIXED */}
       <div 
-        ref={canvasRef}
+        ref={containerRef}
+        onMouseDown={handleCanvasMouseDown}
+        onMouseMove={handleCanvasMouseMove}
+        onMouseUp={handleCanvasMouseUp}
+        onMouseLeave={handleCanvasMouseUp}
         style={{ 
           flex: 1,
           position: 'relative',
-          backgroundImage: `
-            radial-gradient(circle, rgba(30, 41, 59, 0.5) 1px, transparent 1px)
-          `,
-          backgroundSize: '20px 20px'
+          cursor: isPanning ? 'grabbing' : 'default',
+          overflow: 'hidden',
+          userSelect: 'none'
         }}
       >
-        <svg style={{ 
-          position: 'absolute', 
-          top: 0, 
-          left: 0, 
-          width: '100%', 
-          height: '100%',
-          pointerEvents: 'none',
-          zIndex: 1
-        }}>
-          {edges.map(edge => {
-            const source = filteredNodes.find(n => n.id === edge.source);
-            const target = filteredNodes.find(n => n.id === edge.target);
-            if (!source || !target) return null;
-            
-            const start = getNodeCenter(source);
-            const end = getNodeCenter(target);
-            
-            return (
-              <g key={edge.id}>
-                <line
-                  x1={start.x}
-                  y1={start.y}
-                  x2={end.x}
-                  y2={end.y}
-                  stroke="#475569"
-                  strokeWidth={2}
-                  opacity={0.4}
-                />
-                {edge.label && (
-                  <text
-                    x={(start.x + end.x) / 2}
-                    y={(start.y + end.y) / 2}
-                    fill="#94A3B8"
-                    fontSize="11px"
-                    textAnchor="middle"
-                    style={{ pointerEvents: 'none' }}
-                  >
-                    {edge.label}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </svg>
+        <div 
+          ref={canvasRef}
+          style={{ 
+            width: '100%',
+            height: '100%',
+            position: 'relative',
+            backgroundImage: `
+              radial-gradient(circle, rgba(30, 41, 59, 0.5) 1px, transparent 1px)
+            `,
+            backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
+            backgroundPosition: `${pan.x}px ${pan.y}px`
+          }}
+        >
+          <div style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: '0 0',
+            width: '5000px',
+            height: '5000px',
+            position: 'absolute'
+          }}>
+            <svg style={{ 
+              position: 'absolute', 
+              top: 0, 
+              left: 0, 
+              width: '100%', 
+              height: '100%',
+              pointerEvents: 'none',
+              zIndex: 1,
+              overflow: 'visible'
+            }}>
+              {edges.map(edge => {
+                const source = filteredNodes.find(n => n.id === edge.source);
+                const target = filteredNodes.find(n => n.id === edge.target);
+                if (!source || !target) return null;
+                
+                const start = getNodeCenter(source);
+                const end = getNodeCenter(target);
+                
+                const isHighlighted = hoveredNode === edge.source || hoveredNode === edge.target;
+                
+                return (
+                  <g key={edge.id}>
+                    <line
+                      x1={start.x}
+                      y1={start.y}
+                      x2={end.x}
+                      y2={end.y}
+                      stroke={isHighlighted ? '#FFFFFF' : '#475569'}
+                      strokeWidth={isHighlighted ? 3 : 2}
+                      opacity={isHighlighted ? 0.8 : 0.4}
+                      style={{ transition: 'all 0.2s' }}
+                    />
+                    {edge.label && (
+                      <text
+                        x={(start.x + end.x) / 2}
+                        y={(start.y + end.y) / 2}
+                        fill={isHighlighted ? '#FFFFFF' : '#94A3B8'}
+                        fontSize="11px"
+                        textAnchor="middle"
+                        style={{ pointerEvents: 'none' }}
+                      >
+                        {edge.label}
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
 
-        {filteredNodes.map(node => (
-          <Node
-            key={node.id}
-            node={node}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onClick={handleNodeClick}
-            isDragging={draggingNode === node.id}
-            activeLensIds={activeLensIds}
-            blendColors={blendColors}
-            lenses={lenses}
-          />
-        ))}
+            {filteredNodes.map(node => (
+              <Node
+                key={node.id}
+                node={node}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onClick={handleNodeClick}
+                onHover={handleNodeHover}
+                onLeave={handleNodeLeave}
+                isDragging={draggingNode === node.id}
+                isHovered={hoveredNode === node.id}
+                activeLensIds={activeLensIds}
+                blendColors={blendColors}
+                lenses={lenses}
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
       {selectedNode && (

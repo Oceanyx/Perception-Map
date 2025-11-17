@@ -3,7 +3,7 @@ import React from 'react';
 import { domainColors } from '../seedData';
 import { Heart, MessageCircle, Brain } from 'lucide-react';
 
-export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging, activeLensIds, blendColors, lenses }) {
+export default function Node({ node, onDragStart, onDragEnd, onClick, onHover, onLeave, isDragging, isHovered, activeLensIds, blendColors, lenses }) {
   const modeIcons = {
     capture: '📝',
     reflect: '🤔',
@@ -27,7 +27,7 @@ export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging
           left: node.position.x,
           top: node.position.y,
           width: node.width,
-          height: node.width, // USE WIDTH FOR BOTH to ensure perfect circle
+          height: node.width,
           borderRadius: '50%',
           background: `${color}18`,
           border: `2px dashed ${color}40`,
@@ -62,7 +62,10 @@ export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging
   let border = '1px solid rgba(255,255,255,0.15)';
   let boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
 
-  if (matches === 1) {
+  if (isHovered) {
+    border = '2px solid #10B981';
+    boxShadow = '0 8px 24px rgba(16,185,129,0.4)';
+  } else if (matches === 1) {
     const activeLens = lenses.find(l => activeLensIds.includes(l.id) && lensIds.includes(l.id));
     border = activeLens ? `2px solid ${activeLens.color}` : '2px solid #6C63FF';
     boxShadow = `0 6px 20px ${activeLens?.color}40`;
@@ -79,6 +82,8 @@ export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging
       onDragStart={(e) => onDragStart(e, node)}
       onDragEnd={(e) => onDragEnd(e, node)}
       onClick={() => onClick(node)}
+      onMouseEnter={() => onHover && onHover(node)}
+      onMouseLeave={() => onLeave && onLeave()}
       style={{
         position: 'absolute',
         left: node.position.x,
@@ -91,8 +96,9 @@ export default function Node({ node, onDragStart, onDragEnd, onClick, isDragging
         borderRadius: '12px',
         cursor: isDragging ? 'grabbing' : 'grab',
         opacity: isDragging ? 0.6 : 1,
-        zIndex: isDragging ? 1000 : 10,
-        transition: 'all 0.2s'
+        zIndex: isDragging ? 1000 : (isHovered ? 100 : 10),
+        transition: 'all 0.2s',
+        transform: isHovered ? 'scale(1.05)' : 'scale(1)'
       }}
     >
       <div style={{
