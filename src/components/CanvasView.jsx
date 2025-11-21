@@ -260,7 +260,7 @@ export default function CanvasView() {
 
   const handleCreateNode = async () => {
     const centerX = (window.innerWidth / 2 - pan.x) / zoom;
-    const centerY = (window.innerHeight / 2 - pan.y) / zoom;
+    const centerY = (window.innerHeight / 2 - pan.y - 60) / zoom; // -60 for nav bar
     
     const newNode = {
       type: 'content',
@@ -753,8 +753,8 @@ export default function CanvasView() {
             width: '10000px',
             height: '10000px',
             position: 'absolute',
-            left: '-5000px',
-            top: '-5000px'
+            left: '0px',
+            top: '0px'
           }}>
             <svg style={{ 
               position: 'absolute', 
@@ -766,6 +766,20 @@ export default function CanvasView() {
               zIndex: 1,
               overflow: 'visible'
             }}>
+              <defs>
+                {/* Gradient for refines connection */}
+                <linearGradient id="refinesGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style={{ stopColor: '#F59E0B', stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: '#FBBF24', stopOpacity: 1 }} />
+                </linearGradient>
+                {/* Arrow markers */}
+                <marker id="arrowInfluences" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                  <path d="M0,0 L0,6 L9,3 z" fill="#6C63FF" />
+                </marker>
+                <marker id="arrowRefines" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                  <path d="M0,0 L0,6 L9,3 z" fill="#F59E0B" />
+                </marker>
+              </defs>
               {edges.map(edge => {
                 const source = filteredNodes.find(n => n.id === edge.source);
                 const target = filteredNodes.find(n => n.id === edge.target);
@@ -775,25 +789,49 @@ export default function CanvasView() {
                 const end = getNodeCenter(target);
                 
                 const isHighlighted = hoveredNode === edge.source || hoveredNode === edge.target;
+                const connType = connectionTypes.find(c => c.id === edge.type) || connectionTypes[0];
+                
+                // Calculate curved path for contradicts
+                const midX = (start.x + end.x) / 2;
+                const midY = (start.y + end.y) / 2;
+                const dx = end.x - start.x;
+                const dy = end.y - start.y;
+                const perpX = -dy * 0.1;
+                const perpY = dx * 0.1;
                 
                 return (
                   <g key={edge.id}>
-                    <line
-                      x1={start.x + 5000}
-                      y1={start.y + 5000}
-                      x2={end.x + 5000}
-                      y2={end.y + 5000}
-                      stroke={isHighlighted ? '#FFFFFF' : '#475569'}
-                      strokeWidth={isHighlighted ? 3 : 2}
-                      opacity={isHighlighted ? 0.8 : 0.4}
-                      style={{ transition: 'all 0.2s' }}
-                    />
+                    {edge.type === 'contradicts' ? (
+                      <path
+                        d={`M ${start.x} ${start.y} Q ${midX + perpX} ${midY + perpY} ${end.x} ${end.y}`}
+                        stroke={isHighlighted ? '#FFFFFF' : connType.color}
+                        strokeWidth={isHighlighted ? 3 : 2}
+                        opacity={isHighlighted ? 0.8 : 0.6}
+                        fill="none"
+                        strokeDasharray={connType.strokeDasharray}
+                        style={{ transition: 'all 0.2s' }}
+                      />
+                    ) : (
+                      <line
+                        x1={start.x}
+                        y1={start.y}
+                        x2={end.x}
+                        y2={end.y}
+                        stroke={connType.gradient ? 'url(#refinesGradient)' : (isHighlighted ? '#FFFFFF' : connType.color)}
+                        strokeWidth={isHighlighted ? 3 : 2}
+                        opacity={isHighlighted ? 0.8 : 0.6}
+                        strokeDasharray={connType.strokeDasharray}
+                        markerEnd={connType.arrow ? (edge.type === 'refines' ? 'url(#arrowRefines)' : 'url(#arrowInfluences)') : 'none'}
+                        style={{ transition: 'all 0.2s' }}
+                      />
+                    )}
                     {edge.label && (
                       <text
-                        x={(start.x + end.x) / 2 + 5000}
-                        y={(start.y + end.y) / 2 + 5000}
-                        fill={isHighlighted ? '#FFFFFF' : '#94A3B8'}
+                        x={(start.x + end.x) / 2}
+                        y={(start.y + end.y) / 2 - 5}
+                        fill={isHighlighted ? '#FFFFFF' : connType.color}
                         fontSize="11px"
+                        fontWeight="500"
                         textAnchor="middle"
                         style={{ pointerEvents: 'none' }}
                       >

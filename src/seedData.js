@@ -35,6 +35,7 @@ export const agencyStates = [
 
 /**
  * Meta-pattern library with diagnostic ↔ strength framing pairs
+ * Organized into silent groups for the diagnostic view
  */
 export const metaPatternLibrary = {
   internal: [
@@ -46,8 +47,7 @@ export const metaPatternLibrary = {
     { diagnostic: "Collapse response", strength: "Energy conservation" },
     { diagnostic: "Freeze–dissociation arc", strength: "Protective distancing" },
     { diagnostic: "Identity fusion", strength: "Deep commitment" },
-    { diagnostic: "Hypervigilant scanning", strength: "Environmental awareness" },
-    { diagnostic: "Internal jury", strength: "Multi-perspective consideration" }
+    { diagnostic: "Hypervigilant scanning", strength: "Environmental awareness" }
   ],
   relational: [
     { diagnostic: "Belonging loop", strength: "Relational calibration" },
@@ -58,16 +58,14 @@ export const metaPatternLibrary = {
     { diagnostic: "Projection loop", strength: "Pattern recognition" },
     { diagnostic: "Deference pattern", strength: "Respectful yielding" },
     { diagnostic: "Role-locking", strength: "Consistency provision" },
-    { diagnostic: "Persona conflict", strength: "Identity flexibility" },
-    { diagnostic: "Merging → resentment", strength: "Deep empathy capacity" }
+    { diagnostic: "Persona conflict", strength: "Identity flexibility" }
   ],
   meaningMaking: [
     { diagnostic: "Narrative inflation", strength: "Meaning-making depth" },
     { diagnostic: "Grand pattern projection", strength: "Systems thinking" },
     { diagnostic: "Hyper-interpretation", strength: "Nuance sensitivity" },
     { diagnostic: "Epistemic spiraling", strength: "Intellectual rigor" },
-    { diagnostic: "Framework stacking", strength: "Integrative thinking" },
-    { diagnostic: "Concept-grab", strength: "Quick comprehension" },
+    { diagnostic: "Intuition override", strength: "Rational calibration" },
     { diagnostic: "Story reification", strength: "Narrative coherence" }
   ],
   temporal: [
@@ -75,10 +73,17 @@ export const metaPatternLibrary = {
     { diagnostic: "Repetition compulsion", strength: "Pattern completion drive" },
     { diagnostic: "Inner child protector conflict", strength: "Parts awareness" },
     { diagnostic: "Later insight reframing", strength: "Growth recognition" },
-    { diagnostic: "Scene re-entry loop", strength: "Processing persistence" },
-    { diagnostic: "Time-looping", strength: "Temporal awareness" }
+    { diagnostic: "Scene re-entry loop", strength: "Processing persistence" }
   ]
 };
+
+// Category metadata for diagnostic view
+export const metaPatternCategories = [
+  { id: 'internal', name: 'Internal Loops', description: 'Patterns within your own mind and body' },
+  { id: 'relational', name: 'Relational Loops', description: 'Patterns in how you relate to others' },
+  { id: 'meaningMaking', name: 'Meaning-Making Loops', description: 'Patterns in how you interpret and understand' },
+  { id: 'temporal', name: 'Temporal Loops', description: 'Patterns across time and development' }
+];
 
 // Helper to get all tags with their framings
 export const getMetaTagWithFraming = (tag) => {
@@ -116,7 +121,6 @@ export const metaPatternHints = [
   { tag: "Repetition compulsion", keywords: ["repeat", "repeating", "again", "pattern repeats"] },
   { tag: "Freeze–dissociation arc", keywords: ["dissoc", "dissociated", "space out", "freeze"] },
   { tag: "Pursuer–withdrawer", keywords: ["pursuer", "withdraw", "avoid", "chase"] },
-  { tag: "Framework stacking", keywords: ["framework", "model", "theory", "stack"] },
   { tag: "Scene re-entry loop", keywords: ["re-entry", "re-enter", "scenario replay", "imagine again"] }
 ];
 
@@ -197,11 +201,11 @@ export const domainQuestionBanks = {
 
 // Connection types with visual styling
 export const connectionTypes = [
-  { id: 'influences', name: 'Influences', description: 'Causal or directional impact', color: '#6C63FF', style: 'solid', arrow: true },
-  { id: 'mirrors', name: 'Mirrors', description: 'Parallel or reflected pattern', color: '#10B981', style: 'dashed', arrow: false },
-  { id: 'contradicts', name: 'Contradicts', description: 'Tension or opposition', color: '#EF4444', style: 'solid', arrow: false },
-  { id: 'refines', name: 'Refines', description: 'Evolution or development over time', color: '#F59E0B', style: 'gradient', arrow: true },
-  { id: 'meta-pattern', name: 'Shares Meta Pattern', description: 'Connected by recurring pattern', color: '#A78BFA', style: 'dotted', arrow: false }
+  { id: 'influences', name: 'Influences', description: 'Causal or directional impact', color: '#6C63FF', strokeDasharray: 'none', arrow: true },
+  { id: 'mirrors', name: 'Mirrors', description: 'Parallel or reflected pattern', color: '#10B981', strokeDasharray: '5,5', arrow: false },
+  { id: 'contradicts', name: 'Contradicts', description: 'Tension or opposition', color: '#EF4444', strokeDasharray: 'none', arrow: false },
+  { id: 'refines', name: 'Refines', description: 'Evolution or development over time', color: '#F59E0B', strokeDasharray: 'none', arrow: true, gradient: true },
+  { id: 'meta-pattern', name: 'Shares Meta Pattern', description: 'Connected by recurring pattern', color: '#A78BFA', strokeDasharray: '2,4', arrow: false }
 ];
 
 export const seedNodes = [
@@ -304,7 +308,7 @@ export const seedNodes = [
 ];
 
 export const seedEdges = [
-  { id: "e1", source: "n-1", target: "n-2", label: "Related to", type: "influences" },
+  { id: "e1", source: "n-1", target: "n-2", label: "Influences", type: "influences" },
   { id: "e2", source: "n-2", target: "n-3", label: "Triggers", type: "influences" },
-  { id: "e3", source: "n-1", target: "n-3", label: "Connects to", type: "mirrors" }
+  { id: "e3", source: "n-1", target: "n-3", label: "Mirrors", type: "mirrors" }
 ];

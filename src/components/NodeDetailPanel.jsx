@@ -1,12 +1,14 @@
 // src/components/NodeDetailPanel.jsx
 import React, { useState, useMemo } from 'react';
+import { domainColors, patternTypes, agencyStates, predefinedMetaTags, metaPatternHints, metaPatternLibrary, metaPatternCategories, modes, domainQuestionBanks, getMetaTagWithFraming, strengthMetaTags, connectionTypes } from '../seedData';
 import { Plus, Trash2, HelpCircle, MessageSquare, Eye, Lightbulb, RefreshCw, Clock } from 'lucide-react';
-import { domainColors, patternTypes, agencyStates, predefinedMetaTags, metaPatternHints, metaPatternLibrary, modes, domainQuestionBanks, getMetaTagWithFraming, strengthMetaTags, connectionTypes } from '../seedData';
 
 export default function NodeDetailPanel({
   node, onClose, onUpdate, onDelete, lenses, edges, nodes, onDeleteEdge, onCreateEdge, onUpdateEdge,
   recentMetaTags = [], onAddRecentMetaTag = () => {}
-}) {
+}) 
+
+{
   const [formData, setFormData] = useState({
     title: node.data.title || '',
     perceivedPattern: node.data.perceivedPattern || '',
@@ -32,6 +34,7 @@ export default function NodeDetailPanel({
   const [customTagInput, setCustomTagInput] = useState('');
   const [guidanceLevel, setGuidanceLevel] = useState('quick');
   const [showGuidance, setShowGuidance] = useState(false);
+  const [selectedDiagnosticCategory, setSelectedDiagnosticCategory] = useState(null);
   const [tagFramingView, setTagFramingView] = useState('strength');
   const [localSuggestedTags, setLocalSuggestedTags] = useState(() => predefinedMetaTags.slice(0, 20));
   const [editingEdgeId, setEditingEdgeId] = useState(null);
@@ -270,8 +273,8 @@ export default function NodeDetailPanel({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>Meta Tags<HelpTooltip>Recurring patterns this belongs to</HelpTooltip></label>
               <div style={{ display: 'flex', gap: '4px' }}>
-                {['diagnostic', 'strength'].map(view => (
-                  <button key={view} onClick={() => setTagFramingView(view)} style={{ padding: '4px 8px', background: tagFramingView === view ? '#6C63FF' : '#1E293B', border: `1px solid ${tagFramingView === view ? '#6C63FF' : 'rgba(148, 163, 184, 0.15)'}`, borderRadius: '4px', color: tagFramingView === view ? '#fff' : '#94A3B8', cursor: 'pointer', fontSize: '11px', textTransform: 'capitalize', transition: 'all 0.15s' }}>{view}</button>
+                {['strength', 'diagnostic'].map(view => (
+                  <button key={view} onClick={() => { setTagFramingView(view); setSelectedDiagnosticCategory(null); }} style={{ padding: '4px 8px', background: tagFramingView === view ? '#6C63FF' : '#1E293B', border: `1px solid ${tagFramingView === view ? '#6C63FF' : 'rgba(148, 163, 184, 0.15)'}`, borderRadius: '4px', color: tagFramingView === view ? '#fff' : '#94A3B8', cursor: 'pointer', fontSize: '11px', textTransform: 'capitalize', transition: 'all 0.15s' }}>{view}</button>
                 ))}
               </div>
             </div>
@@ -300,13 +303,32 @@ export default function NodeDetailPanel({
               <button onClick={() => addCustomTag(true)} style={{ padding: '8px 14px', background: '#10B981', border: '1px solid #10B981', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 500, transition: 'all 0.15s' }}>+</button>
             </div>
 
+            {/* Category selection for diagnostic view */}
+            {tagFramingView === 'diagnostic' && (
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                  {metaPatternCategories.map(cat => (
+                    <button key={cat.id} onClick={() => setSelectedDiagnosticCategory(selectedDiagnosticCategory === cat.id ? null : cat.id)} title={cat.description} style={{ padding: '6px 12px', background: selectedDiagnosticCategory === cat.id ? '#6C63FF' : '#1E293B', border: `1px solid ${selectedDiagnosticCategory === cat.id ? '#6C63FF' : 'rgba(148, 163, 184, 0.15)'}`, borderRadius: '6px', color: selectedDiagnosticCategory === cat.id ? '#fff' : '#C7D2FE', cursor: 'pointer', fontSize: '12px', transition: 'all 0.15s' }}>{cat.name}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Show tags based on view and selection */}
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {(tagFramingView === 'strength' ? strengthMetaTags : suggestedMetaTags).slice(0, 10).filter(t => !formData.metaTags.includes(t)).map(tag => (
-                <button key={tag} onClick={() => addMetaTag(tag)} style={{ padding: '6px 10px', background: '#1E293B', border: '1px solid rgba(148, 163, 184, 0.15)', borderRadius: '5px', color: '#C7D2FE', cursor: 'pointer', fontSize: '12px', transition: 'all 0.15s' }}>{tag}</button>
-              ))}
+              {tagFramingView === 'strength' ? (
+                strengthMetaTags.slice(0, 10).filter(t => !formData.metaTags.includes(t)).map(tag => (
+                  <button key={tag} onClick={() => addMetaTag(tag)} style={{ padding: '6px 10px', background: '#1E293B', border: '1px solid rgba(148, 163, 184, 0.15)', borderRadius: '5px', color: '#C7D2FE', cursor: 'pointer', fontSize: '12px', transition: 'all 0.15s' }}>{tag}</button>
+                ))
+              ) : selectedDiagnosticCategory ? (
+                metaPatternLibrary[selectedDiagnosticCategory]?.map(item => item.diagnostic).filter(t => !formData.metaTags.includes(t)).map(tag => (
+                  <button key={tag} onClick={() => addMetaTag(tag)} style={{ padding: '6px 10px', background: '#1E293B', border: '1px solid rgba(148, 163, 184, 0.15)', borderRadius: '5px', color: '#C7D2FE', cursor: 'pointer', fontSize: '12px', transition: 'all 0.15s' }}>{tag}</button>
+                ))
+              ) : (
+                <div style={{ fontSize: '12px', color: '#64748B', fontStyle: 'italic', padding: '8px' }}>Select a category above to see diagnostic patterns</div>
+              )}
             </div>
           </div>
-        </div>
 
         {/* Agency Orientation */}
         <div style={{ ...sectionStyle, background: '#0B1220', border: '1px solid rgba(255,255,255,0.04)' }}>
@@ -455,6 +477,7 @@ export default function NodeDetailPanel({
             })}
           </div>
         </div>
+      </div>
 
         {/* Timestamp */}
         <div style={{ fontSize: '12px', color: '#64748B', textAlign: 'center', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
