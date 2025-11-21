@@ -259,11 +259,16 @@ export default function CanvasView() {
     setEdges(current => current.filter(e => e.id !== edgeId));
   }, []);
 
-  const handleUpdateEdge = useCallback(async (edgeId, updates) => {
+const handleUpdateEdge = useCallback(async (edgeId, updates) => {
+    // If updating type, clear the label so it uses the connection type name
+    if (updates.type) {
+      const connType = connectionTypes.find(c => c.id === updates.type);
+      updates.label = connType?.name || updates.label;
+    }
     await updateEdge(edgeId, updates);
     setEdges(current => current.map(e => e.id === edgeId ? { ...e, ...updates } : e));
   }, []);
-
+  
   const handleUpdateLenses = useCallback(async (newLenses) => {
     await dbUpdateLenses(newLenses);
     setLenses(newLenses);
@@ -810,6 +815,9 @@ export default function CanvasView() {
                 const perpX = -dy * 0.1;
                 const perpY = dx * 0.1;
                 
+                // Determine what label to show
+                const displayLabel = edge.label && edge.label !== connType.name ? edge.label : connType.name;
+                
                 return (
                   <g key={edge.id}>
                     {edge.type === 'contradicts' ? (
@@ -836,19 +844,17 @@ export default function CanvasView() {
                         style={{ transition: 'all 0.2s' }}
                       />
                     )}
-                    {edge.label && (
-                      <text
-                        x={(start.x + end.x) / 2}
-                        y={(start.y + end.y) / 2 - 5}
-                        fill={isHighlighted ? '#FFFFFF' : connType.color}
-                        fontSize="14px"
-                        fontWeight="500"
-                        textAnchor="middle"
-                        style={{ pointerEvents: 'none' }}
-                      >
-                        {edge.label}
-                      </text>
-                    )}
+                    <text
+                      x={(start.x + end.x) / 2}
+                      y={(start.y + end.y) / 2 - 5}
+                      fill={isHighlighted ? '#FFFFFF' : connType.color}
+                      fontSize="14px"
+                      fontWeight="500"
+                      textAnchor="middle"
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      {displayLabel}
+                    </text>
                   </g>
                 );
               })}

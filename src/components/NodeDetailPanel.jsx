@@ -457,7 +457,7 @@ const handleUpdateEdge = async (edgeId, updates) => {
                         <span style={{ fontSize: '13px', color: '#E6EEF8', fontWeight: 500 }}>{isSource ? '→' : '←'} {otherNode?.data.title || 'Unknown'}</span>
                         <span style={{ padding: '2px 8px', background: `${connType.color}20`, border: `1px solid ${connType.color}50`, borderRadius: '4px', fontSize: '11px', color: connType.color }}>{connType.name}</span>
                       </div>
-                      {edge.label && <div style={{ fontSize: '12px', color: '#94A3B8' }}>{edge.label}</div>}
+                      {edge.label && edge.label !== connType.name && <div style={{ fontSize: '12px', color: '#94A3B8' }}>{edge.label}</div>}
                       {edge.explanation && <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px', fontStyle: 'italic' }}>{edge.explanation}</div>}
                       {edge.metaPatternId && <div style={{ fontSize: '11px', color: '#A78BFA', marginTop: '4px' }}>Pattern: {edge.metaPatternId}</div>}
                     </div>
