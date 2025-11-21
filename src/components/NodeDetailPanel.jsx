@@ -32,7 +32,7 @@ export default function NodeDetailPanel({
   const [customTagInput, setCustomTagInput] = useState('');
   const [guidanceLevel, setGuidanceLevel] = useState('quick');
   const [showGuidance, setShowGuidance] = useState(false);
-  const [tagFramingView, setTagFramingView] = useState('diagnostic');
+  const [tagFramingView, setTagFramingView] = useState('strength');
   const [localSuggestedTags, setLocalSuggestedTags] = useState(() => predefinedMetaTags.slice(0, 20));
   const [editingEdgeId, setEditingEdgeId] = useState(null);
 
