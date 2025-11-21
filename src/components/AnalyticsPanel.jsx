@@ -1,7 +1,7 @@
 // src/components/AnalyticsPanel.jsx
 import React from 'react';
 import { BarChart3 } from 'lucide-react';
-import { domainColors } from '../seedData';
+import { domainColors, patternTypes, agencyStates } from '../seedData';
 
 export default function AnalyticsPanel({ nodes, lenses, onClose }) {
   const contentNodes = nodes.filter(n => n.type === 'content');
@@ -17,11 +17,26 @@ export default function AnalyticsPanel({ nodes, lenses, onClose }) {
     count: contentNodes.filter(n => n.data.lensIds?.includes(lens.id)).length
   }));
 
-  const modeCounts = {
-    capture: contentNodes.filter(n => n.data.mode === 'capture').length,
-    reflect: contentNodes.filter(n => n.data.mode === 'reflect').length,
-    explore: contentNodes.filter(n => n.data.mode === 'explore').length
-  };
+  const patternTypeCounts = patternTypes.map(type => ({
+    ...type,
+    count: contentNodes.filter(n => n.data.patternType === type.id).length
+  }));
+
+  const agencyCounts = agencyStates.map(state => ({
+    ...state,
+    count: contentNodes.filter(n => n.data.agencyOrientation === state.id).length
+  }));
+
+  // Collect all meta tags
+  const allMetaTags = {};
+  contentNodes.forEach(node => {
+    (node.data.metaTags || []).forEach(tag => {
+      allMetaTags[tag] = (allMetaTags[tag] || 0) + 1;
+    });
+  });
+  const topMetaTags = Object.entries(allMetaTags)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
 
   return (
     <div style={{
@@ -98,9 +113,9 @@ export default function AnalyticsPanel({ nodes, lenses, onClose }) {
         </div>
 
         <div style={{ marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '14px', color: '#94A3B8', marginBottom: '12px' }}>By Mode</h3>
-          {Object.entries(modeCounts).map(([mode, count]) => (
-            <div key={mode} style={{ 
+          <h3 style={{ fontSize: '14px', color: '#94A3B8', marginBottom: '12px' }}>By Pattern Type</h3>
+          {patternTypeCounts.map(type => (
+            <div key={type.id} style={{ 
               display: 'flex', 
               justifyContent: 'space-between',
               padding: '10px',
@@ -108,11 +123,47 @@ export default function AnalyticsPanel({ nodes, lenses, onClose }) {
               borderRadius: '8px',
               marginBottom: '8px'
             }}>
-              <span style={{ textTransform: 'capitalize' }}>{mode}</span>
-              <span style={{ fontWeight: 600 }}>{count}</span>
+              <span style={{ textTransform: 'capitalize' }}>{type.name}</span>
+              <span style={{ fontWeight: 600 }}>{type.count}</span>
             </div>
           ))}
         </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '14px', color: '#94A3B8', marginBottom: '12px' }}>By Agency Orientation</h3>
+          {agencyCounts.map(state => (
+            <div key={state.id} style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              padding: '10px',
+              background: '#1E293B',
+              borderRadius: '8px',
+              marginBottom: '8px'
+            }}>
+              <span style={{ textTransform: 'capitalize' }}>{state.name}</span>
+              <span style={{ fontWeight: 600 }}>{state.count}</span>
+            </div>
+          ))}
+        </div>
+
+        {topMetaTags.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '14px', color: '#94A3B8', marginBottom: '12px' }}>Top Meta Tags</h3>
+            {topMetaTags.map(([tag, count]) => (
+              <div key={tag} style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between',
+                padding: '10px',
+                background: '#1E293B',
+                borderRadius: '8px',
+                marginBottom: '8px'
+              }}>
+                <span>{tag}</span>
+                <span style={{ fontWeight: 600, color: '#A78BFA' }}>{count}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

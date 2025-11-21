@@ -5,7 +5,7 @@ import NodeDetailPanel from './NodeDetailPanel';
 import Node from './Node';
 import AnalyticsPanel from './AnalyticsPanel';
 import LensManager from './LensManager';
-import { domainColors, defaultLenses } from '../seedData';
+import { domainColors, defaultLenses, modes, predefinedMetaTags } from '../seedData';
 import { 
   db, 
   initializeDB, 
@@ -41,6 +41,24 @@ export default function CanvasView() {
   const [tool, setTool] = useState('select'); // 'select' or 'hand'
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
+
+  // Shared recent meta-tags (persisted to localStorage)
+  const [recentMetaTags, setRecentMetaTags] = useState(() => {
+    try {
+      const raw = localStorage.getItem('recentMetaTags');
+      if (raw) return JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+    // a small default slice to help first-time users
+    return predefinedMetaTags.slice(0, 6);
+  });
+
+  const addRecentMetaTag = useCallback((tag) => {
+    setRecentMetaTags(prev => {
+      const next = [tag, ...prev.filter(t => t !== tag)].slice(0, 30);
+      try { localStorage.setItem('recentMetaTags', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  }, []);
 
   // Initialize database and load data
   useEffect(() => {
@@ -249,10 +267,19 @@ export default function CanvasView() {
       position: { x: centerX, y: centerY },
       data: {
         title: 'New Node',
-        body: '',
+        perceivedPattern: '',
+        interpretation: '',
+        activeQuestions: '',
+        feltSense: '',
+        agencyOrientation: 'curious',
+        metaTags: [],
+        patternType: 'trigger',
+        beforeState: '',
+        afterState: '',
+        refinesNodeId: null,
         lensIds: [lenses[0]?.id || 'empathy'],
         domainIds: [],
-        mode: 'capture',
+        mode: 'field-first',
         notes: '',
         createdAt: new Date().toISOString()
       }
@@ -263,6 +290,7 @@ export default function CanvasView() {
     setNodes(current => [...current, nodeWithId]);
     setSelectedNode(nodeWithId);
   };
+  
 
   const getNodeCenter = (node) => {
     const width = node.type === 'content' ? 210 : 100;
@@ -532,13 +560,13 @@ export default function CanvasView() {
               Modes
             </div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {['capture', 'reflect', 'explore'].map(mode => (
+              {modes.map(mode => (
                 <button
-                  key={mode}
-                  onClick={() => toggleFilter('modes', mode)}
+                  key={mode.id}
+                  onClick={() => toggleFilter('modes', mode.id)}
                   style={{
                     padding: '6px 12px',
-                    background: activeFilters.modes.includes(mode) ? '#6C63FF' : '#0F1724',
+                    background: activeFilters.modes.includes(mode.id) ? '#6C63FF' : '#0F1724',
                     border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: '6px',
                     color: '#E6EEF8',
@@ -547,7 +575,7 @@ export default function CanvasView() {
                     textTransform: 'capitalize'
                   }}
                 >
-                  {mode}
+                  {mode.name}
                 </button>
               ))}
             </div>
@@ -818,6 +846,8 @@ export default function CanvasView() {
           nodes={nodes}
           onDeleteEdge={handleDeleteEdge}
           onCreateEdge={handleCreateEdge}
+          recentMetaTags={recentMetaTags}
+          onAddRecentMetaTag={addRecentMetaTag}
         />
       )}
 
