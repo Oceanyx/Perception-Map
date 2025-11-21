@@ -195,6 +195,15 @@ export const domainQuestionBanks = {
   }
 };
 
+// Connection types with visual styling
+export const connectionTypes = [
+  { id: 'influences', name: 'Influences', description: 'Causal or directional impact', color: '#6C63FF', style: 'solid', arrow: true },
+  { id: 'mirrors', name: 'Mirrors', description: 'Parallel or reflected pattern', color: '#10B981', style: 'dashed', arrow: false },
+  { id: 'contradicts', name: 'Contradicts', description: 'Tension or opposition', color: '#EF4444', style: 'solid', arrow: false },
+  { id: 'refines', name: 'Refines', description: 'Evolution or development over time', color: '#F59E0B', style: 'gradient', arrow: true },
+  { id: 'meta-pattern', name: 'Shares Meta Pattern', description: 'Connected by recurring pattern', color: '#A78BFA', style: 'dotted', arrow: false }
+];
+
 export const seedNodes = [
   {
     id: "d-private",
