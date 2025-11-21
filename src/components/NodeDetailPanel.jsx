@@ -4,7 +4,7 @@ import { domainColors, patternTypes, agencyStates, predefinedMetaTags, metaPatte
 import { Plus, Trash2, HelpCircle, MessageSquare, Eye, Lightbulb, RefreshCw, Clock } from 'lucide-react';
 
 export default function NodeDetailPanel({
-  node, onClose, onUpdate, onDelete, lenses, edges, nodes, onDeleteEdge, onCreateEdge, onUpdateEdge,
+  node, onClose, onUpdate, onDelete, lenses, edges, nodes, onDeleteEdge, onCreateEdge,
   recentMetaTags = [], onAddRecentMetaTag = () => {}
 }) 
 
@@ -301,7 +301,9 @@ const toggleDomain = (domainId) => setFormData(prev => {
               <div style={{ marginBottom: '10px' }}>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
                   {metaPatternCategories.map(cat => (
-                    <button key={cat.id} onClick={() => setSelectedDiagnosticCategory(selectedDiagnosticCategory === cat.id ? null : cat.id)} title={cat.description} style={{ padding: '6px 12px', background: selectedDiagnosticCategory === cat.id ? '#6C63FF' : '#1E293B', border: `1px solid ${selectedDiagnosticCategory === cat.id ? '#6C63FF' : 'rgba(148, 163, 184, 0.15)'}`, borderRadius: '6px', color: selectedDiagnosticCategory === cat.id ? '#fff' : '#C7D2FE', cursor: 'pointer', fontSize: '12px', transition: 'all 0.15s' }}>{cat.name}</button>
+                    <button key={cat.id} onClick={() => setSelectedDiagnosticCategory(selectedDiagnosticCategory === cat.id ? null : cat.id)} title={cat.description} style={{ padding: '6px 12px', background: selectedDiagnosticCategory === cat.id ? '#6C63FF' : '#1E293B', border: `1px solid ${selectedDiagnosticCategory === cat.id ? '#6C63FF' : 'rgba(148, 163, 184, 0.15)'}`, borderRadius: '6px', color: selectedDiagnosticCategory === cat.id ? '#fff' : '#C7D2FE', cursor: 'pointer', fontSize: '12px', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      📁 {cat.name}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -315,7 +317,9 @@ const toggleDomain = (domainId) => setFormData(prev => {
                 ))
               ) : selectedDiagnosticCategory ? (
                 metaPatternLibrary[selectedDiagnosticCategory]?.map(item => item.diagnostic).filter(t => !formData.metaTags.includes(t)).map(tag => (
-                  <button key={tag} onClick={() => addMetaTag(tag)} style={{ padding: '6px 10px', background: '#1E293B', border: '1px solid rgba(148, 163, 184, 0.15)', borderRadius: '5px', color: '#C7D2FE', cursor: 'pointer', fontSize: '12px', transition: 'all 0.15s' }}>{tag}</button>
+                  <button key={tag} onClick={() => addMetaTag(tag)} style={{ padding: '6px 10px', background: '#1E293B', border: '1px solid rgba(148, 163, 184, 0.15)', borderRadius: '5px', color: '#C7D2FE', cursor: 'pointer', fontSize: '12px', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    + {tag}
+                  </button>
                 ))
               ) : (
                 <div style={{ fontSize: '12px', color: '#64748B', fontStyle: 'italic', padding: '8px' }}>Select a category above to see diagnostic patterns</div>
@@ -421,8 +425,10 @@ const toggleDomain = (domainId) => setFormData(prev => {
                   </select>
                 </div>
               )}
-
-              <button onClick={handleCreateConnection} disabled={!newConnection.targetId} style={{ padding: '10px', background: newConnection.targetId ? '#10B981' : '#1E293B', border: '1px solid', borderColor: newConnection.targetId ? '#10B981' : 'rgba(148, 163, 184, 0.2)', borderRadius: '6px', color: '#fff', cursor: newConnection.targetId ? 'pointer' : 'not-allowed', fontSize: '13px', width: '100%', fontWeight: 500, transition: 'all 0.15s' }}>Create Connection</button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setShowAddConnection(false)} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(148, 163, 184, 0.2)', borderRadius: '6px', color: '#94A3B8', cursor: 'pointer', fontSize: '13px', fontWeight: 500, transition: 'all 0.15s' }}>Cancel</button>
+                <button onClick={handleCreateConnection} disabled={!newConnection.targetId} style={{ flex: 1, padding: '10px', background: newConnection.targetId ? '#10B981' : '#1E293B', border: '1px solid', borderColor: newConnection.targetId ? '#10B981' : 'rgba(148, 163, 184, 0.2)', borderRadius: '6px', color: '#fff', cursor: newConnection.targetId ? 'pointer' : 'not-allowed', fontSize: '13px', fontWeight: 500, transition: 'all 0.15s' }}>Create Connection</button>
+              </div>
             </div>
           )}
 
@@ -453,7 +459,7 @@ const toggleDomain = (domainId) => setFormData(prev => {
                     </div>
                   </div>
 
-                  {isEditing && onUpdateEdge && (
+                  {isEditing && (
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '10px' }}>
                       <div style={{ marginBottom: '8px' }}>
                         <label style={{ fontSize: '12px', color: '#94A3B8', marginBottom: '4px', display: 'block' }}>Type</label>

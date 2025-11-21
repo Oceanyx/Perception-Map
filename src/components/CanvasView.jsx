@@ -835,7 +835,7 @@ export default function CanvasView() {
                         x={(start.x + end.x) / 2}
                         y={(start.y + end.y) / 2 - 5}
                         fill={isHighlighted ? '#FFFFFF' : connType.color}
-                        fontSize="11px"
+                        fontSize="14px"
                         fontWeight="500"
                         textAnchor="middle"
                         style={{ pointerEvents: 'none' }}
