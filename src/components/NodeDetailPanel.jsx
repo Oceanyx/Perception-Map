@@ -223,73 +223,8 @@ const handleUpdateEdge = async (edgeId, updates) => {
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#94A3B8', fontSize: '24px', cursor: 'pointer', padding: '4px 8px', lineHeight: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
       </div>
-      {/* Lens Guidance Panel */}
-        {showLensGuidance && (
-          <div style={{ marginBottom: '18px', padding: '14px', background: '#12101E', borderRadius: '10px', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
-            <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Eye size={16} color="#EC4899" />
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#EC4899' }}>Active Lens Questions</span>
-            </div>
-            {formData.lensIds.length === 0 ? (
-              <div style={{ fontSize: '12px', color: '#64748B', fontStyle: 'italic' }}>
-                Select a lens to see guiding questions
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {formData.lensIds.map(lensId => {
-                  const lens = lenses.find(l => l.id === lensId);
-                  if (!lens || !lens.questions) return null;
-                  
-                  return (
-                    <div key={lensId} style={{
-                      padding: '10px',
-                      background: 'rgba(30, 41, 59, 0.4)',
-                      borderRadius: '6px',
-                      border: `1px solid ${lens.color}30`
-                    }}>
-                      <div style={{ 
-                        fontSize: '12px', 
-                        fontWeight: 600, 
-                        color: lens.color,
-                        marginBottom: '6px',
-                        textTransform: 'capitalize'
-                      }}>
-                        {lens.name}
-                      </div>
-                      <ul style={{ margin: 0, paddingLeft: '18px', color: '#CBD5E1', fontSize: '12px', lineHeight: '1.6' }}>
-                        {lens.questions.map((q, i) => q && (
-                          <li key={i} style={{ marginBottom: '4px' }}>{q}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+
       <div data-node-panel-scrollable="true" style={{ flex: 1, overflowY: 'auto', padding: '18px' }}>
-        
-        {/* Configuration Section - At Top */}
-        <div style={{ ...sectionStyle, background: '#0B1220', border: '1px solid rgba(255,255,255,0.04)', marginBottom: '18px' }}>
-          <h3 style={{ margin: '0 0 14px 0', fontSize: '15px', fontWeight: 600, color: '#E6EEF8' }}>Configuration</h3>
-          <div style={{ marginBottom: '14px' }}>
-            <label style={labelStyle}>Domains</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {availableDomains.map(domain => (
-                <button key={domain.id} onClick={() => toggleDomain(domain.id)} style={{ padding: '8px 14px', background: formData.domainIds.includes(domain.id) ? domainColors[domain.id] : '#1E293B', border: `1px solid ${formData.domainIds.includes(domain.id) ? domainColors[domain.id] : 'rgba(148, 163, 184, 0.2)'}`, borderRadius: '6px', color: formData.domainIds.includes(domain.id) ? '#000' : '#E6EEF8', cursor: 'pointer', fontSize: '13px', fontWeight: formData.domainIds.includes(domain.id) ? 600 : 400, transition: 'all 0.15s' }}>{domain.name}</button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label style={labelStyle}>Lenses {formData.lensIds.length === 0 && <span style={{ color: '#EF4444', marginLeft: '4px' }}>*</span>}</label>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {lenses.map(lens => (
-                <button key={lens.id} onClick={() => toggleLens(lens.id)} style={{ padding: '8px 14px', background: formData.lensIds.includes(lens.id) ? lens.color : '#1E293B', border: `1px solid ${formData.lensIds.includes(lens.id) ? lens.color : 'rgba(148, 163, 184, 0.2)'}`, borderRadius: '6px', color: '#E6EEF8', cursor: 'pointer', fontSize: '13px', fontWeight: formData.lensIds.includes(lens.id) ? 600 : 400, transition: 'all 0.15s' }}>{lens.name}</button>
-              ))}
-            </div>
-          </div>
-        </div>
         {/* Domain Guidance Panel */}
         {showGuidance && (
           <div style={{ marginBottom: '18px', padding: '14px', background: '#0B1220', borderRadius: '10px', border: '1px solid rgba(79, 159, 255, 0.2)'}}>
@@ -341,6 +276,72 @@ const handleUpdateEdge = async (edgeId, updates) => {
           </div>
         )}
         
+        {/* Lens Guidance Panel */}
+        {showLensGuidance && (
+          <div style={{ marginBottom: '18px', padding: '14px', background: '#12101E', borderRadius: '10px', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
+            <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Eye size={16} color="#EC4899" />
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#EC4899' }}>Active Lens Questions</span>
+            </div>
+            {formData.lensIds.length === 0 ? (
+              <div style={{ fontSize: '12px', color: '#64748B', fontStyle: 'italic' }}>
+                Select a lens to see guiding questions
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {formData.lensIds.map(lensId => {
+                  const lens = lenses.find(l => l.id === lensId);
+                  if (!lens || !lens.questions) return null;
+                  
+                  return (
+                    <div key={lensId} style={{
+                      padding: '10px',
+                      background: 'rgba(30, 41, 59, 0.4)',
+                      borderRadius: '6px',
+                      border: `1px solid ${lens.color}30`
+                    }}>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        fontWeight: 600, 
+                        color: lens.color,
+                        marginBottom: '6px',
+                        textTransform: 'capitalize'
+                      }}>
+                        {lens.name}
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: '18px', color: '#CBD5E1', fontSize: '12px', lineHeight: '1.6' }}>
+                        {lens.questions.map((q, i) => q && (
+                          <li key={i} style={{ marginBottom: '4px' }}>{q}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}  
+        {/* Configuration Section - At Top */}
+        <div style={{ ...sectionStyle, background: '#0B1220', border: '1px solid rgba(255,255,255,0.04)', marginBottom: '18px' }}>
+          <h3 style={{ margin: '0 0 14px 0', fontSize: '15px', fontWeight: 600, color: '#E6EEF8' }}>Configuration</h3>
+          <div style={{ marginBottom: '14px' }}>
+            <label style={labelStyle}>Domains</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {availableDomains.map(domain => (
+                <button key={domain.id} onClick={() => toggleDomain(domain.id)} style={{ padding: '8px 14px', background: formData.domainIds.includes(domain.id) ? domainColors[domain.id] : '#1E293B', border: `1px solid ${formData.domainIds.includes(domain.id) ? domainColors[domain.id] : 'rgba(148, 163, 184, 0.2)'}`, borderRadius: '6px', color: formData.domainIds.includes(domain.id) ? '#000' : '#E6EEF8', cursor: 'pointer', fontSize: '13px', fontWeight: formData.domainIds.includes(domain.id) ? 600 : 400, transition: 'all 0.15s' }}>{domain.name}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Lenses {formData.lensIds.length === 0 && <span style={{ color: '#EF4444', marginLeft: '4px' }}>*</span>}</label>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {lenses.map(lens => (
+                <button key={lens.id} onClick={() => toggleLens(lens.id)} style={{ padding: '8px 14px', background: formData.lensIds.includes(lens.id) ? lens.color : '#1E293B', border: `1px solid ${formData.lensIds.includes(lens.id) ? lens.color : 'rgba(148, 163, 184, 0.2)'}`, borderRadius: '6px', color: '#E6EEF8', cursor: 'pointer', fontSize: '13px', fontWeight: formData.lensIds.includes(lens.id) ? 600 : 400, transition: 'all 0.15s' }}>{lens.name}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+        
         {/* OBSERVATION SECTION */}
         <div style={observationBg}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
@@ -348,7 +349,7 @@ const handleUpdateEdge = async (edgeId, updates) => {
             <span style={{ ...sectionTitleStyle, color: '#4D9FFF' }}>What I Notice</span>
           </div>
           <div style={{ marginBottom: '12px' }}>
-            <label style={labelStyle}>Perceived Pattern<HelpTooltip>What did you notice? What actually happened?</HelpTooltip></label>
+            <label style={labelStyle}>Observation<HelpTooltip>What did you notice? What actually happened?</HelpTooltip></label>
             <textarea value={formData.perceivedPattern} onChange={e => setFormData(prev => ({ ...prev, perceivedPattern: e.target.value }))} rows={3} placeholder="What I observe happening..." style={inputStyle} {...inputFocusProps} />
           </div>
           <div>

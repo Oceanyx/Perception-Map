@@ -25,6 +25,7 @@ import {
 } from '../lib/db';
 
 export default function CanvasView({purposeData}) {
+  const [focusedDomain, setFocusedDomain] = useState(null);
   const [showLegend, setShowLegend] = useState(false);
   const [showPurposeModal, setShowPurposeModal] = useState(false);
   const [nodes, setNodes] = useState([]);
@@ -347,24 +348,292 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportPNG = () => {
-    const canvas = document.createElement('canvas');
+  // const handleExportPNG = () => {
+  //   const originalText = 'Export PNG';
+  //   const container = containerRef.current;
+  //   const canvas = canvasRef.current;
+  //   if (!container || !canvas) return;
+
+  //   // Create offscreen canvas
+  //   const exportCanvas = document.createElement('canvas');
+  //   const ctx = exportCanvas.getContext('2d');
+    
+  //   // Set canvas size to viewport
+  //   exportCanvas.width = container.offsetWidth;
+  //   exportCanvas.height = container.offsetHeight;
+    
+  //   // Fill background
+  //   ctx.fillStyle = '#0F1724';
+  //   ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+    
+  //   // Draw grid pattern
+  //   ctx.save();
+  //   const gridSize = 20 * zoom;
+  //   const offsetX = pan.x % gridSize;
+  //   const offsetY = pan.y % gridSize;
+    
+  //   ctx.fillStyle = 'rgba(30, 41, 59, 0.5)';
+  //   for (let x = offsetX; x < exportCanvas.width; x += gridSize) {
+  //     for (let y = offsetY; y < exportCanvas.height; y += gridSize) {
+  //       ctx.beginPath();
+  //       ctx.arc(x, y, 1, 0, Math.PI * 2);
+  //       ctx.fill();
+  //     }
+  //   }
+  //   ctx.restore();
+    
+  //   // Draw edges
+  //   ctx.save();
+  //   edges.forEach(edge => {
+  //     const source = filteredNodes.find(n => n.id === edge.source);
+  //     const target = filteredNodes.find(n => n.id === edge.target);
+  //     if (!source || !target) return;
+      
+  //     const start = getNodeCenter(source);
+  //     const end = getNodeCenter(target);
+  //     const connType = connectionTypes.find(c => c.id === edge.type) || connectionTypes[0];
+      
+  //     const screenStartX = start.x * zoom + pan.x;
+  //     const screenStartY = start.y * zoom + pan.y;
+  //     const screenEndX = end.x * zoom + pan.x;
+  //     const screenEndY = end.y * zoom + pan.y;
+      
+  //     ctx.strokeStyle = connType.color;
+  //     ctx.lineWidth = 2;
+  //     ctx.globalAlpha = 0.8;
+      
+  //     if (connType.strokeDasharray && connType.strokeDasharray !== 'none') {
+  //       const dashArray = connType.strokeDasharray.split(',').map(n => parseInt(n));
+  //       ctx.setLineDash(dashArray);
+  //     } else {
+  //       ctx.setLineDash([]);
+  //     }
+      
+  //     ctx.beginPath();
+  //     ctx.moveTo(screenStartX, screenStartY);
+  //     ctx.lineTo(screenEndX, screenEndY);
+  //     ctx.stroke();
+      
+  //     // Draw arrow if needed
+  //     if (connType.arrow) {
+  //       const angle = Math.atan2(screenEndY - screenStartY, screenEndX - screenStartX);
+  //       const arrowSize = 8;
+  //       ctx.fillStyle = connType.color;
+  //       ctx.beginPath();
+  //       ctx.moveTo(screenEndX, screenEndY);
+  //       ctx.lineTo(
+  //         screenEndX - arrowSize * Math.cos(angle - Math.PI / 6),
+  //         screenEndY - arrowSize * Math.sin(angle - Math.PI / 6)
+  //       );
+  //       ctx.lineTo(
+  //         screenEndX - arrowSize * Math.cos(angle + Math.PI / 6),
+  //         screenEndY - arrowSize * Math.sin(angle + Math.PI / 6)
+  //       );
+  //       ctx.closePath();
+  //       ctx.fill();
+  //     }
+      
+  //     // Draw label
+  //     if (edge.label || connType.name) {
+  //       const label = edge.label && edge.label !== connType.name ? edge.label : connType.name;
+  //       const midX = (screenStartX + screenEndX) / 2;
+  //       const midY = (screenStartY + screenEndY) / 2;
+        
+  //       ctx.font = '14px Inter, sans-serif';
+  //       ctx.fillStyle = connType.color;
+  //       ctx.textAlign = 'center';
+  //       ctx.textBaseline = 'bottom';
+  //       ctx.fillText(label, midX, midY - 5);
+  //     }
+  //   });
+  //   ctx.restore();
+  //   // Reset alpha for nodes
+  //   ctx.globalAlpha = 1;
+  //   ctx.setLineDash([]);
+
+  //   // Draw nodes
+  //   ctx.globalAlpha = 1;
+  //   filteredNodes.forEach(node => {
+  //     ctx.globalAlpha = 1; // Reset for each node
+  //     const screenX = node.position.x * zoom + pan.x;
+  //     const screenY = node.position.y * zoom + pan.y;
+      
+  //     if (node.type === 'domain') {
+  //       // Draw domain circle
+  //       const radius = (node.width / 2) * zoom;
+  //       const color = domainColors[node.data.domainId];
+        
+  //       ctx.save();
+  //       ctx.globalAlpha = 0.18;
+  //       ctx.fillStyle = color;
+  //       ctx.beginPath();
+  //       ctx.arc(screenX + radius, screenY + radius, radius, 0, Math.PI * 2);
+  //       ctx.fill();
+  //       ctx.restore();
+        
+  //       ctx.strokeStyle = color;
+  //       ctx.lineWidth = 2;
+  //       ctx.globalAlpha = 0.4;
+  //       ctx.setLineDash([5, 5]);
+  //       ctx.beginPath();
+  //       ctx.arc(screenX + radius, screenY + radius, radius, 0, Math.PI * 2);
+  //       ctx.stroke();
+  //       ctx.setLineDash([]);
+        
+  //       // Draw domain label
+  //       ctx.globalAlpha = 1;
+  //       ctx.font = `bold ${18 * zoom}px Inter, sans-serif`;
+  //       ctx.fillStyle = color;
+  //       ctx.textAlign = 'center';
+  //       ctx.textBaseline = 'middle';
+  //       ctx.fillText(node.data.label.toUpperCase(), screenX + radius, screenY + radius);
+  //     } else {
+  //       // Draw content node
+  //       const width = 210 * zoom;
+  //       const height = 80 * zoom;
+        
+  //       // Background with gradient
+  //       const domainIds = node.data?.domainIds || [];
+  //       if (domainIds.length > 0) {
+  //         const gradient = ctx.createLinearGradient(screenX, screenY, screenX + width, screenY + height);
+  //         if (domainIds.length === 1) {
+  //           const color = domainColors[domainIds[0]];
+  //           gradient.addColorStop(0, `${color}25`);
+  //           gradient.addColorStop(1, `${color}15`);
+  //         } else if (domainIds.length >= 2) {
+  //           gradient.addColorStop(0, `${domainColors[domainIds[0]]}25`);
+  //           gradient.addColorStop(1, `${domainColors[domainIds[1]]}25`);
+  //         }
+  //         ctx.fillStyle = gradient;
+  //       } else {
+  //         ctx.fillStyle = '#1E293B';
+  //       }
+        
+  //       ctx.beginRadius = 12 * zoom;
+  //       roundRect(ctx, screenX, screenY, width, height, 12 * zoom);
+  //       ctx.fill();
+        
+  //       // Border
+  //       ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  //       ctx.lineWidth = 1;
+  //       roundRect(ctx, screenX, screenY, width, height, 12 * zoom);
+  //       ctx.stroke();
+        
+  //       // Lens badges
+  //       const lensIds = node.data?.lensIds || [];
+  //       let badgeX = screenX + 8 * zoom;
+  //       const badgeY = screenY - 8 * zoom;
+  //       lensIds.forEach(lensId => {
+  //         const lens = lenses.find(l => l.id === lensId);
+  //         if (lens) {
+  //           ctx.fillStyle = lens.color;
+  //           roundRect(ctx, badgeX, badgeY, 60 * zoom, 16 * zoom, 4 * zoom);
+  //           ctx.fill();
+            
+  //           ctx.font = `${11 * zoom}px Inter, sans-serif`;
+  //           ctx.fillStyle = '#fff';
+  //           ctx.textAlign = 'left';
+  //           ctx.textBaseline = 'top';
+  //           ctx.fillText(lens.name, badgeX + 6 * zoom, badgeY + 3 * zoom);
+            
+  //           badgeX += 65 * zoom;
+  //         }
+  //       });
+        
+  //       // Title
+  //       ctx.font = `${14 * zoom}px Inter, sans-serif`;
+  //       ctx.fillStyle = '#E6EEF8';
+  //       ctx.textAlign = 'left';
+  //       ctx.textBaseline = 'top';
+  //       const title = node.data.title || 'Untitled';
+  //       ctx.fillText(title, screenX + 12 * zoom, screenY + 16 * zoom);
+        
+  //       // Body preview (if exists)
+  //       if (node.data.perceivedPattern) {
+  //         ctx.font = `${12 * zoom}px Inter, sans-serif`;
+  //         ctx.fillStyle = '#94A3B8';
+  //         const preview = node.data.perceivedPattern.substring(0, 40) + '...';
+  //         ctx.fillText(preview, screenX + 12 * zoom, screenY + 40 * zoom);
+  //       }
+  //     }
+  //   });
+    
+  //   // Helper function for rounded rectangles
+  //   function roundRect(ctx, x, y, width, height, radius) {
+  //     ctx.beginPath();
+  //     ctx.moveTo(x + radius, y);
+  //     ctx.lineTo(x + width - radius, y);
+  //     ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  //     ctx.lineTo(x + width, y + height - radius);
+  //     ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  //     ctx.lineTo(x + radius, y + height);
+  //     ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  //     ctx.lineTo(x, y + radius);
+  //     ctx.quadraticCurveTo(x, y, x + radius, y);
+  //     ctx.closePath();
+  //   }
+    
+  //   // Export as PNG
+  //   exportCanvas.toBlob((blob) => {
+  //     if (!blob) {
+  //       alert('Failed to create image');
+  //       return;
+  //     }
+      
+  //     const url = URL.createObjectURL(blob);
+  //     const a = document.createElement('a');
+  //     a.href = url;
+  //     a.download = `perception-map-${purposeData?.title.replace(/\s+/g, '-').toLowerCase() || 'untitled'}-${Date.now()}.png`;
+  //     document.body.appendChild(a); // Add to DOM
+  //     a.click();
+  //     document.body.removeChild(a); // Remove from DOM
+      
+  //     // Clean up after a delay
+  //     setTimeout(() => URL.revokeObjectURL(url), 100);
+  //   }, 'image/png', 0.95); // 95% quality
+  // };
+  const handleExportPNG = async () => {
+    // Load html2canvas dynamically
+    if (!window.html2canvas) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      document.head.appendChild(script);
+      await new Promise(resolve => script.onload = resolve);
+    }
+
+    // Temporarily hide UI elements
+    setSelectedNode(null); // Close detail panel
+    setShowAnalytics(false);
+    setShowLensManager(false);
+    setShowFilters(false);
+    
+    // Wait a moment for React to re-render
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     const container = containerRef.current;
     if (!container) return;
-    
-    canvas.width = container.offsetWidth;
-    canvas.height = container.offsetHeight;
-    const ctx = canvas.getContext('2d');
-    
-    // Fill background
-    ctx.fillStyle = '#0F1724';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Note: This is a simple implementation that just captures the background
-    // For a full implementation, we'd need to render nodes and edges to the canvas
-    // which is complex. For now, we can use html2canvas library or similar
-    
-    alert('PNG export: Coming soon! For now, use browser screenshot (Cmd/Ctrl + Shift + S)');
+
+    try {
+      const canvas = await window.html2canvas(container, {
+        backgroundColor: '#0F1724',
+        scale: 2,
+        logging: false
+      });
+
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chroma-${purposeData?.title.replace(/\s+/g, '-').toLowerCase() || 'untitled'}-${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export PNG. Please try again.');
+    }
   };
 
   const handleCreateNode = async () => {
@@ -481,6 +750,46 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
     setPan({ x: 400, y: 200 });
   };
 
+  const handleDomainFocus = (domainId) => {
+    if (focusedDomain === domainId) {
+      // Exit focus mode
+      setFocusedDomain(null);
+      handleResetView();
+      return;
+    }
+
+    // Find the domain node
+    const domainNode = nodes.find(n => n.type === 'domain' && n.data.domainId === domainId);
+    if (!domainNode) return;
+
+    // Calculate center of domain
+    const bounds = getDomainBounds(domainNode);
+    const targetZoom = 1.2;
+    
+    // Center the domain circle on screen
+    const viewportCenterX = window.innerWidth / 2;
+    const viewportCenterY = (window.innerHeight - 60) / 2 + 60; // -60 for top nav
+    
+    const targetPanX = viewportCenterX - bounds.centerX * targetZoom;
+    const targetPanY = viewportCenterY - bounds.centerY * targetZoom;
+
+    // Animate to focus
+    setZoom(targetZoom);
+    setPan({ x: targetPanX, y: targetPanY });
+    setFocusedDomain(domainId);
+  };
+
+  // Exit focus mode with ESC key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && focusedDomain) {
+        setFocusedDomain(null);
+        handleResetView();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [focusedDomain]);
   // Get cursor based on tool
   const getCursor = () => {
     if (tool === 'hand') return isPanning ? 'grabbing' : 'grab';
@@ -512,20 +821,31 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
           {['all', 'private', 'public', 'abstract'].map(mode => (
             <button
               key={mode}
-              onClick={() => setViewMode(mode)}
+              onClick={() => {
+                setViewMode(mode);
+                if (mode !== 'all') {
+                  handleDomainFocus(mode);
+                } else {
+                  setFocusedDomain(null);
+                  handleResetView();
+                }
+              }}
               style={{
                 padding: '8px 16px',
-                background: viewMode === mode ? '#6C63FF' : 'transparent',
-                border: viewMode === mode ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                background: focusedDomain === mode || (viewMode === mode && !focusedDomain) ? '#6C63FF' : 'transparent',
+                border: focusedDomain === mode || (viewMode === mode && !focusedDomain) ? 'none' : '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '8px',
                 color: '#E6EEF8',
                 cursor: 'pointer',
                 fontSize: '14px',
-                fontWeight: viewMode === mode ? 600 : 400,
-                textTransform: 'capitalize'
+                fontWeight: focusedDomain === mode || (viewMode === mode && !focusedDomain) ? 600 : 400,
+                textTransform: 'capitalize',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
               }}
             >
-              {mode === 'all' ? 'All Domains' : mode}
+              {mode === 'all' ? 'All Domains' : `${focusedDomain === mode ? '◀ ' : ''}${mode}`}
             </button>
           ))}
         </div>
@@ -864,6 +1184,16 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
                 const isHighlighted = hoveredNode === edge.source || hoveredNode === edge.target;
                 const connType = connectionTypes.find(c => c.id === edge.type) || connectionTypes[0];
                 
+                // Fade edges in focus mode
+                let edgeOpacity = isHighlighted ? 0.8 : 0.6;
+                if (focusedDomain) {
+                  const sourceInFocus = source.type === 'content' && source.data.domainIds?.includes(focusedDomain);
+                  const targetInFocus = target.type === 'content' && target.data.domainIds?.includes(focusedDomain);
+                  if (!sourceInFocus && !targetInFocus) {
+                    edgeOpacity = 0.1;
+                  }
+                }
+
                 // Calculate curved path for contradicts
                 const midX = (start.x + end.x) / 2;
                 const midY = (start.y + end.y) / 2;
@@ -882,7 +1212,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
                         d={`M ${start.x} ${start.y} Q ${midX + perpX} ${midY + perpY} ${end.x} ${end.y}`}
                         stroke={isHighlighted ? '#FFFFFF' : connType.color}
                         strokeWidth={isHighlighted ? 3 : 2}
-                        opacity={isHighlighted ? 0.8 : 0.6}
+                        opacity={edgeOpacity}
                         fill="none"
                         strokeDasharray={connType.strokeDasharray}
                         style={{ transition: 'all 0.2s' }}
@@ -895,7 +1225,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
                         y2={end.y}
                         stroke={connType.gradient ? 'url(#refinesGradient)' : (isHighlighted ? '#FFFFFF' : connType.color)}
                         strokeWidth={isHighlighted ? 3 : 2}
-                        opacity={isHighlighted ? 0.8 : 0.6}
+                        opacity={edgeOpacity}
                         strokeDasharray={connType.strokeDasharray}
                         markerEnd={connType.arrow ? (edge.type === 'refines' ? 'url(#arrowRefines)' : 'url(#arrowInfluences)') : 'none'}
                         style={{ transition: 'all 0.2s' }}
@@ -918,16 +1248,29 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
             </svg>
 
             {console.log('Filtered nodes:', filteredNodes.map(n => ({ id: n.id, type: n.type, position: n.position })))}
-            {filteredNodes.map(node => (
-              <div
-                key={node.id}
-                style={{
-                  position: 'absolute',
-                  left: node.position.x,
-                  top: node.position.y,
-                  pointerEvents: tool === 'hand' ? 'none' : 'auto'
-                }}
-              >
+            {filteredNodes.map(node => {
+              // Calculate opacity based on focus mode
+              let opacity = 1;
+              if (focusedDomain) {
+                if (node.type === 'domain') {
+                  opacity = node.data.domainId === focusedDomain ? 1 : 0.15;
+                } else if (node.type === 'content') {
+                  opacity = node.data.domainIds?.includes(focusedDomain) ? 1 : 0.2;
+                }
+              }
+
+              return (
+                <div
+                  key={node.id}
+                  style={{
+                    position: 'absolute',
+                    left: node.position.x,
+                    top: node.position.y,
+                    pointerEvents: tool === 'hand' ? 'none' : 'auto',
+                    opacity: opacity,
+                    transition: 'opacity 0.3s ease'
+                  }}
+                >
                 <Node
                   node={{ ...node, position: { x: 0, y: 0 } }}
                   onDragStart={handleDragStart}
@@ -942,7 +1285,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
                   lenses={lenses}
                 />
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </div>
