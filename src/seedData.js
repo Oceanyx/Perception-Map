@@ -7,9 +7,33 @@ export const domainColors = {
 };
 
 export const defaultLenses = [
-  { id: 'empathy', name: 'Empathy', color: '#EC4899' },
-  { id: 'systems', name: 'Systems', color: '#3B82F6' },
-  { id: 'aesthetic', name: 'Aesthetic', color: '#8B5CF6' }
+  { 
+    id: 'empathy', 
+    name: 'Empathy', 
+    color: '#EC4899',
+    questions: [
+      'What might this person be feeling or needing?',
+      'How would I feel if I were in their position?'
+    ]
+  },
+  { 
+    id: 'systems', 
+    name: 'Systems', 
+    color: '#3B82F6',
+    questions: [
+      'What larger patterns or structures are at play here?',
+      'How do the parts of this system influence each other?'
+    ]
+  },
+  { 
+    id: 'aesthetic', 
+    name: 'Aesthetic', 
+    color: '#8B5CF6',
+    questions: [
+      'What beauty or harmony am I noticing?',
+      'How does this feel in terms of texture, rhythm, or flow?'
+    ]
+  }
 ];
 
 // Pattern types for nodes

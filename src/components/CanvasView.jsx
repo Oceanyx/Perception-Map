@@ -5,6 +5,9 @@ import NodeDetailPanel from './NodeDetailPanel';
 import Node from './Node';
 import AnalyticsPanel from './AnalyticsPanel';
 import LensManager from './LensManager';
+import LeftSidebar from './LeftSidebar';
+import PurposeModal from './PurposeModal';
+import LegendModal from './LegendModal';
 import { domainColors, defaultLenses, modes, predefinedMetaTags, connectionTypes} from '../seedData';
 import { 
   db, 
@@ -21,7 +24,9 @@ import {
   updateLenses as dbUpdateLenses
 } from '../lib/db';
 
-export default function CanvasView() {
+export default function CanvasView({purposeData}) {
+  const [showLegend, setShowLegend] = useState(false);
+  const [showPurposeModal, setShowPurposeModal] = useState(false);
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [lenses, setLenses] = useState(defaultLenses);
@@ -273,6 +278,94 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
     await dbUpdateLenses(newLenses);
     setLenses(newLenses);
   }, []);
+
+  const handleImportJSON = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        
+        if (!data.nodes || !data.edges) {
+          alert('Invalid map file format');
+          return;
+        }
+        
+        if (!window.confirm('This will replace your current map. Continue?')) {
+          return;
+        }
+        
+        // Clear existing data
+        await db.nodes.clear();
+        await db.edges.clear();
+        
+        // Import new data
+        await db.nodes.bulkAdd(data.nodes);
+        await db.edges.bulkAdd(data.edges);
+        
+        if (data.lenses) {
+          await db.lenses.clear();
+          await db.lenses.bulkAdd(data.lenses);
+          setLenses(data.lenses);
+        }
+        
+        // Reload
+        const loadedNodes = await getAllNodes();
+        const loadedEdges = await getAllEdges();
+        setNodes(loadedNodes);
+        setEdges(loadedEdges);
+        
+        alert('Map imported successfully!');
+      } catch (error) {
+        console.error('Import error:', error);
+        alert('Failed to import map. Please check the file format.');
+      }
+    };
+    input.click();
+  };
+
+  const handleExportJSON = () => {
+    const data = {
+      nodes,
+      edges,
+      lenses,
+      purposeData,
+      exportedAt: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `perception-map-${purposeData?.title.replace(/\s+/g, '-').toLowerCase() || 'untitled'}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportPNG = () => {
+    const canvas = document.createElement('canvas');
+    const container = containerRef.current;
+    if (!container) return;
+    
+    canvas.width = container.offsetWidth;
+    canvas.height = container.offsetHeight;
+    const ctx = canvas.getContext('2d');
+    
+    // Fill background
+    ctx.fillStyle = '#0F1724';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Note: This is a simple implementation that just captures the background
+    // For a full implementation, we'd need to render nodes and edges to the canvas
+    // which is complex. For now, we can use html2canvas library or similar
+    
+    alert('PNG export: Coming soon! For now, use browser screenshot (Cmd/Ctrl + Shift + S)');
+  };
 
   const handleCreateNode = async () => {
     const centerX = (window.innerWidth / 2 - pan.x) / zoom;
@@ -531,6 +624,90 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
         </div>
       </div>
 
+      {/* Left Sidebar */}
+      <LeftSidebar
+        onImport={handleImportJSON}
+        onExportJSON={handleExportJSON}
+        onExportPNG={handleExportPNG}
+        onShowPurpose={() => setShowPurposeModal(true)}
+        onShowLegend={() => setShowLegend(true)}
+        tool={tool}
+        onToolChange={setTool}
+      />
+{/* Zoom Controls - Bottom Right */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        right: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        zIndex: 100
+      }}>
+        <button
+          onClick={handleZoomIn}
+          style={{
+            padding: '10px',
+            background: '#1E293B',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            color: '#E6EEF8',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          title="Zoom In"
+        >
+          <ZoomIn size={20} />
+        </button>
+        <button
+          onClick={handleResetView}
+          style={{
+            padding: '10px',
+            background: '#1E293B',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            color: '#E6EEF8',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          title="Reset View"
+        >
+          <Maximize2 size={20} />
+        </button>
+        <button
+          onClick={handleZoomOut}
+          style={{
+            padding: '10px',
+            background: '#1E293B',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            color: '#E6EEF8',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          title="Zoom Out"
+        >
+          <ZoomOut size={20} />
+        </button>
+        <div style={{
+          padding: '8px',
+          background: '#1E293B',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '8px',
+          color: '#94A3B8',
+          fontSize: '12px',
+          textAlign: 'center'
+        }}>
+          {Math.round(zoom * 100)}%
+        </div>
+      </div>
+
       {/* Filters Dropdown */}
       {showFilters && (
         <div style={{
@@ -614,126 +791,6 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
           </button>
         </div>
       )}
-
-      {/* Tool Selector - Bottom Left */}
-      <div style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        zIndex: 100
-      }}>
-        <button
-          onClick={() => setTool('select')}
-          style={{
-            padding: '10px',
-            background: tool === 'select' ? '#6C63FF' : '#1E293B',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '8px',
-            color: '#E6EEF8',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          title="Select Tool (V)"
-        >
-          <MousePointer size={20} />
-        </button>
-        <button
-          onClick={() => setTool('hand')}
-          style={{
-            padding: '10px',
-            background: tool === 'hand' ? '#6C63FF' : '#1E293B',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '8px',
-            color: '#E6EEF8',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          title="Hand Tool (H or Space)"
-        >
-          <Hand size={20} />
-        </button>
-      </div>
-
-      {/* Zoom Controls - Bottom Right */}
-      <div style={{
-        position: 'absolute',
-        bottom: '20px',
-        right: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        zIndex: 100
-      }}>
-        <button
-          onClick={handleZoomIn}
-          style={{
-            padding: '10px',
-            background: '#1E293B',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '8px',
-            color: '#E6EEF8',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          title="Zoom In"
-        >
-          <ZoomIn size={20} />
-        </button>
-        <button
-          onClick={handleResetView}
-          style={{
-            padding: '10px',
-            background: '#1E293B',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '8px',
-            color: '#E6EEF8',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          title="Reset View"
-        >
-          <Maximize2 size={20} />
-        </button>
-        <button
-          onClick={handleZoomOut}
-          style={{
-            padding: '10px',
-            background: '#1E293B',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '8px',
-            color: '#E6EEF8',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          title="Zoom Out"
-        >
-          <ZoomOut size={20} />
-        </button>
-        <div style={{
-          padding: '8px',
-          background: '#1E293B',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '8px',
-          color: '#94A3B8',
-          fontSize: '12px',
-          textAlign: 'center'
-        }}>
-          {Math.round(zoom * 100)}%
-        </div>
-      </div>
 
       {/* Canvas */}
       <div 
@@ -923,6 +980,23 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
           onUpdate={handleUpdateLenses}
         />
         )}
+      {showPurposeModal && purposeData && (
+        <PurposeModal
+          purposeData={purposeData}
+          onClose={() => setShowPurposeModal(false)}
+          onEdit={() => {
+            setShowPurposeModal(false);
+            // TODO: Re-open purpose screen for editing
+            alert('Edit purpose: Coming soon!');
+          }}
+        />
+      )}
+      {showLegend && (
+        <LegendModal
+          lenses={lenses}
+          onClose={() => setShowLegend(false)}
+        />
+      )}
     </div>
   );
 }

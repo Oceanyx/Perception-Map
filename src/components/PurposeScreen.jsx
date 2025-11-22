@@ -1,29 +1,7 @@
 // src/components/PurposeScreen.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Upload } from 'lucide-react';
 // Add custom scrollbar styles to document head once
-if (typeof document !== 'undefined' && !document.getElementById('purpose-scrollbar-style')) {
-  const style = document.createElement('style');
-  style.id = 'purpose-scrollbar-style';
-  style.textContent = `
-    [data-purpose-scrollable]::-webkit-scrollbar {
-      width: 8px;
-    }
-    [data-purpose-scrollable]::-webkit-scrollbar-track {
-      background: rgba(30, 41, 59, 0.4);
-      border-radius: 10px;
-    }
-    [data-purpose-scrollable]::-webkit-scrollbar-thumb {
-      background: rgba(108, 99, 255, 0.5);
-      border-radius: 10px;
-    }
-    [data-purpose-scrollable]::-webkit-scrollbar-thumb:hover {
-      background: rgba(108, 99, 255, 0.7);
-    }
-  `;
-  document.head.appendChild(style);
-}
-
 export default function PurposeScreen({ onComplete, onSkip }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -171,6 +149,47 @@ export default function PurposeScreen({ onComplete, onSkip }) {
     });
   };
 
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      if (!window.confirm('This will replace the current form. Continue?')) {
+        return;
+      }
+      
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        
+        if (!data.purposeData && !data.nodes) {
+          alert('Invalid perception map file');
+          return;
+        }
+        
+        // If it has purposeData, use it; otherwise check for nodes/edges
+        if (data.purposeData) {
+          onComplete(data);
+        } else {
+          alert('This file doesn\'t contain purpose data. It will be imported on the canvas.');
+          onSkip({
+            title: 'Imported Map',
+            purpose: '',
+            currentState: '',
+            orientationQuestion: ''
+          });
+        }
+      } catch (error) {
+        console.error('Import error:', error);
+        alert('Failed to import file. Please check the file format.');
+      }
+    };
+    input.click();
+  };
+
   return (
     <div style={{
       position: 'fixed',
@@ -193,100 +212,116 @@ export default function PurposeScreen({ onComplete, onSkip }) {
           pointerEvents: 'none'
         }}
       />
+{/* Logo - Top Left */}
+      <div style={{
+        position: 'absolute',
+        top: '40px',
+        left: '40px',
+        zIndex: 2
+      }}>
+        <h1 style={{
+          margin: 0,
+          fontSize: '28px',
+          fontWeight: 700,
+          background: 'linear-gradient(135deg, #6C63FF 0%, #4D9FFF 50%, #A78BFA 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          letterSpacing: '-0.5px',
+          transition: 'all 0.3s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.background = 'linear-gradient(135deg, #A78BFA 0%, #6C63FF 50%, #4D9FFF 100%)';
+          e.target.style.WebkitBackgroundClip = 'text';
+          e.target.style.backgroundClip = 'text';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'linear-gradient(135deg, #6C63FF 0%, #4D9FFF 50%, #A78BFA 100%)';
+          e.target.style.WebkitBackgroundClip = 'text';
+          e.target.style.backgroundClip = 'text';
+        }}
+        >
+          Chroma
+        </h1>
+        <p style={{
+          margin: '4px 0 0 0',
+          fontSize: '12px',
+          color: '#94A3B8',
+          fontWeight: 500,
+          letterSpacing: '0.3px'
+        }}>
+          Your Perception, Amplified
+        </p>
+      </div>
 
       {/* Form card */}
       <div 
-        data-purpose-scrollable="true"
         style={{
         position: 'relative',
         zIndex: 1,
-        width: '600px',
+        width: '500px',
         maxWidth: '90vw',
         background: 'rgba(15, 23, 36, 0.9)',
         backdropFilter: 'blur(20px)',
         borderRadius: '20px',
         border: '1px solid rgba(108, 99, 255, 0.3)',
         boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-        padding: '48px 48px 24px 48px',
-        maxHeight: '90vh',
-        overflowY: 'auto'
+        padding: '40px'
       }}>
         <div style={{
           textAlign: 'center',
           marginBottom: '32px'
         }}>
-          <h1 style={{
-            margin: '0 0 8px 0',
-            fontSize: '36px',
-            fontWeight: 700,
-            background: 'linear-gradient(135deg, #6C63FF 0%, #A78BFA 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            letterSpacing: '-0.5px'
-          }}>
-            Chroma
-          </h1>
-          <p style={{
-            margin: '0 0 24px 0',
-            fontSize: '15px',
-            color: '#94A3B8',
-            fontWeight: 500,
-            letterSpacing: '0.5px'
-          }}>
-            Your Perception, Amplified
-          </p>
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
-            justifyContent: 'center'
+            gap: '10px',
+            justifyContent: 'center',
+            marginBottom: '8px'
           }}>
-            <Sparkles size={24} color="#6C63FF" />
+            <Sparkles size={22} color="#6C63FF" />
             <h2 style={{
               margin: 0,
-              fontSize: '24px',
+              fontSize: '22px',
               fontWeight: 600,
               color: '#E6EEF8'
             }}>
               Begin Your Journey
             </h2>
           </div>
+          <p style={{
+            margin: 0,
+            color: '#94A3B8',
+            fontSize: '14px',
+            lineHeight: '1.5'
+          }}>
+            Take a moment to set your intention
+          </p>
         </div>
 
-        <p style={{
-          textAlign: 'center',
-          color: '#94A3B8',
-          fontSize: '16px',
-          marginBottom: '48px',
-          lineHeight: '1.6'
-        }}>
-          Take a moment to set your intention. What brings you here today?
-        </p>
-
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <label style={{
               display: 'block',
               color: '#E6EEF8',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 500,
-              marginBottom: '8px'
+              marginBottom: '6px'
             }}>
               Map Title <span style={{ color: '#6C63FF' }}>*</span>
             </label>
             <input
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="e.g., Morning Reflection, Work Tensions, Creative Block..."
+              placeholder="e.g., Morning Reflection, Work Tensions..."
               style={{
                 width: '100%',
-                padding: '14px 16px',
+                padding: '12px 14px',
                 background: 'rgba(30, 41, 59, 0.6)',
                 border: '1px solid rgba(148, 163, 184, 0.3)',
-                borderRadius: '10px',
+                borderRadius: '8px',
                 color: '#E6EEF8',
-                fontSize: '15px',
+                fontSize: '14px',
                 outline: 'none',
                 transition: 'all 0.2s',
                 boxSizing: 'border-box'
@@ -302,29 +337,29 @@ export default function PurposeScreen({ onComplete, onSkip }) {
             />
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <label style={{
               display: 'block',
               color: '#E6EEF8',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 500,
-              marginBottom: '8px'
+              marginBottom: '6px'
             }}>
-              What's the purpose of this session?
+              Session Purpose
             </label>
             <textarea
               value={formData.purpose}
               onChange={(e) => setFormData(prev => ({ ...prev, purpose: e.target.value }))}
-              placeholder="What are you hoping to understand or explore?"
-              rows={3}
+              placeholder="What are you hoping to understand?"
+              rows={2}
               style={{
                 width: '100%',
-                padding: '14px 16px',
+                padding: '12px 14px',
                 background: 'rgba(30, 41, 59, 0.6)',
                 border: '1px solid rgba(148, 163, 184, 0.3)',
-                borderRadius: '10px',
+                borderRadius: '8px',
                 color: '#E6EEF8',
-                fontSize: '15px',
+                fontSize: '14px',
                 outline: 'none',
                 transition: 'all 0.2s',
                 resize: 'vertical',
@@ -342,29 +377,29 @@ export default function PurposeScreen({ onComplete, onSkip }) {
             />
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <label style={{
               display: 'block',
               color: '#E6EEF8',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 500,
-              marginBottom: '8px'
+              marginBottom: '6px'
             }}>
-              What's your current state?
+              Current State
             </label>
             <textarea
               value={formData.currentState}
               onChange={(e) => setFormData(prev => ({ ...prev, currentState: e.target.value }))}
-              placeholder="How are you feeling right now? What's alive in you?"
-              rows={3}
+              placeholder="How are you feeling right now?"
+              rows={2}
               style={{
                 width: '100%',
-                padding: '14px 16px',
+                padding: '12px 14px',
                 background: 'rgba(30, 41, 59, 0.6)',
                 border: '1px solid rgba(148, 163, 184, 0.3)',
-                borderRadius: '10px',
+                borderRadius: '8px',
                 color: '#E6EEF8',
-                fontSize: '15px',
+                fontSize: '14px',
                 outline: 'none',
                 transition: 'all 0.2s',
                 resize: 'vertical',
@@ -382,29 +417,29 @@ export default function PurposeScreen({ onComplete, onSkip }) {
             />
           </div>
 
-          <div style={{ marginBottom: '32px' }}>
+          <div style={{ marginBottom: '28px' }}>
             <label style={{
               display: 'block',
               color: '#E6EEF8',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 500,
-              marginBottom: '8px'
+              marginBottom: '6px'
             }}>
-              What question are you holding?
+              Guiding Question
             </label>
             <textarea
               value={formData.orientationQuestion}
               onChange={(e) => setFormData(prev => ({ ...prev, orientationQuestion: e.target.value }))}
-              placeholder="What do you want to be curious about today?"
+              placeholder="What question are you holding?"
               rows={2}
               style={{
                 width: '100%',
-                padding: '14px 16px',
+                padding: '12px 14px',
                 background: 'rgba(30, 41, 59, 0.6)',
                 border: '1px solid rgba(148, 163, 184, 0.3)',
-                borderRadius: '10px',
+                borderRadius: '8px',
                 color: '#E6EEF8',
-                fontSize: '15px',
+                fontSize: '14px',
                 outline: 'none',
                 transition: 'all 0.2s',
                 resize: 'vertical',
@@ -421,17 +456,46 @@ export default function PurposeScreen({ onComplete, onSkip }) {
               }}
             />
           </div>
-
           <button
-            type="submit"
+            onClick={handleImport}
             style={{
               width: '100%',
-              padding: '16px',
+              padding: '12px',
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: '8px',
+              color: '#10B981',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'all 0.2s',
+              marginBottom: '12px'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(16, 185, 129, 0.2)';
+              e.target.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(16, 185, 129, 0.1)';
+              e.target.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+            }}
+          >
+            <Upload size={18} /> Import Existing Map
+          </button>
+          <button
+            onClick={handleSubmit}
+            style={{
+              width: '100%',
+              padding: '14px',
               background: 'linear-gradient(135deg, #6C63FF 0%, #A78BFA 100%)',
               border: 'none',
-              borderRadius: '10px',
+              borderRadius: '8px',
               color: '#fff',
-              fontSize: '16px',
+              fontSize: '15px',
               fontWeight: 600,
               cursor: 'pointer',
               display: 'flex',
@@ -450,20 +514,19 @@ export default function PurposeScreen({ onComplete, onSkip }) {
               e.target.style.boxShadow = '0 4px 12px rgba(108, 99, 255, 0.3)';
             }}
           >
-            Begin Mapping <ArrowRight size={20} />
+            Begin Mapping <ArrowRight size={18} />
           </button>
 
           <button
-            type="button"
             onClick={handleSkip}
             style={{
               width: '100%',
-              marginTop: '12px',
-              padding: '8px',
+              marginTop: '10px',
+              padding: '6px',
               background: 'transparent',
               border: 'none',
               color: '#64748B',
-              fontSize: '13px',
+              fontSize: '12px',
               cursor: 'pointer',
               transition: 'color 0.2s'
             }}
@@ -472,9 +535,8 @@ export default function PurposeScreen({ onComplete, onSkip }) {
           >
             Skip for now
           </button>
-          <div style={{ height: '24px' }} /> {/* Spacer at bottom */}
         </form>
+        </div>
       </div>
-    </div>
   );
 }

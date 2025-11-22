@@ -3,6 +3,29 @@ import React, { useState, useMemo } from 'react';
 import { domainColors, patternTypes, agencyStates, predefinedMetaTags, metaPatternHints, metaPatternLibrary, metaPatternCategories, modes, domainQuestionBanks, getMetaTagWithFraming, strengthMetaTags, connectionTypes } from '../seedData';
 import { Plus, Trash2, HelpCircle, MessageSquare, Eye, Lightbulb, RefreshCw, Clock } from 'lucide-react';
 
+// Add custom scrollbar styles for NodeDetailPanel
+if (typeof document !== 'undefined' && !document.getElementById('node-panel-scrollbar-style')) {
+  const style = document.createElement('style');
+  style.id = 'node-panel-scrollbar-style';
+  style.textContent = `
+    [data-node-panel-scrollable]::-webkit-scrollbar {
+      width: 6px;
+    }
+    [data-node-panel-scrollable]::-webkit-scrollbar-track {
+      background: transparent;
+      margin: 12px 0;
+    }
+    [data-node-panel-scrollable]::-webkit-scrollbar-thumb {
+      background: rgba(108, 99, 255, 0.3);
+      border-radius: 10px;
+    }
+    [data-node-panel-scrollable]::-webkit-scrollbar-thumb:hover {
+      background: rgba(108, 99, 255, 0.6);
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 export default function NodeDetailPanel({
   node, onClose, onUpdate, onDelete, lenses, edges, nodes, onDeleteEdge, onCreateEdge, onUpdateEdge,
   recentMetaTags = [], onAddRecentMetaTag = () => {}
@@ -29,6 +52,7 @@ export default function NodeDetailPanel({
     lensIds: node.data.lensIds || []
   });
 
+  const [showLensGuidance, setShowLensGuidance] = useState(false);
   const [showAddConnection, setShowAddConnection] = useState(false);
   const [newConnection, setNewConnection] = useState({ targetId: '', label: '', type: 'influences', explanation: '', metaPatternId: '' });
   const [customTagInput, setCustomTagInput] = useState('');
@@ -188,16 +212,63 @@ const handleUpdateEdge = async (edgeId, updates) => {
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button onClick={() => setShowGuidance(prev => !prev)} style={{ background: showGuidance ? '#6C63FF' : 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: showGuidance ? '#fff' : '#94A3B8', padding: '6px 10px', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <MessageSquare size={14} /> Guidance
+            <MessageSquare size={14} /> Domain Guide
+          </button>
+          <button onClick={() => setShowLensGuidance(prev => !prev)} style={{ background: showLensGuidance ? '#EC4899' : 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: showLensGuidance ? '#fff' : '#94A3B8', padding: '6px 10px', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Eye size={14} /> Lens Guide
           </button>
           <button onClick={handleDelete} style={{ background: 'transparent', border: '1px solid #EF4444', borderRadius: '6px', color: '#EF4444', cursor: 'pointer', padding: '6px 10px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Trash2 size={14} />
           </button>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#94A3B8', fontSize: '20px', cursor: 'pointer', padding: '0 8px' }}>×</button>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#94A3B8', fontSize: '24px', cursor: 'pointer', padding: '4px 8px', lineHeight: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
       </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: '18px' }}>
+      {/* Lens Guidance Panel */}
+        {showLensGuidance && (
+          <div style={{ marginBottom: '18px', padding: '14px', background: '#12101E', borderRadius: '10px', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
+            <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Eye size={16} color="#EC4899" />
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#EC4899' }}>Active Lens Questions</span>
+            </div>
+            {formData.lensIds.length === 0 ? (
+              <div style={{ fontSize: '12px', color: '#64748B', fontStyle: 'italic' }}>
+                Select a lens to see guiding questions
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {formData.lensIds.map(lensId => {
+                  const lens = lenses.find(l => l.id === lensId);
+                  if (!lens || !lens.questions) return null;
+                  
+                  return (
+                    <div key={lensId} style={{
+                      padding: '10px',
+                      background: 'rgba(30, 41, 59, 0.4)',
+                      borderRadius: '6px',
+                      border: `1px solid ${lens.color}30`
+                    }}>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        fontWeight: 600, 
+                        color: lens.color,
+                        marginBottom: '6px',
+                        textTransform: 'capitalize'
+                      }}>
+                        {lens.name}
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: '18px', color: '#CBD5E1', fontSize: '12px', lineHeight: '1.6' }}>
+                        {lens.questions.map((q, i) => q && (
+                          <li key={i} style={{ marginBottom: '4px' }}>{q}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      <div data-node-panel-scrollable="true" style={{ flex: 1, overflowY: 'auto', padding: '18px' }}>
         
         {/* Configuration Section - At Top */}
         <div style={{ ...sectionStyle, background: '#0B1220', border: '1px solid rgba(255,255,255,0.04)', marginBottom: '18px' }}>
@@ -219,17 +290,54 @@ const handleUpdateEdge = async (edgeId, updates) => {
             </div>
           </div>
         </div>
-        {/* Guidance Panel */}
+        {/* Domain Guidance Panel */}
         {showGuidance && (
-          <div style={{ marginBottom: '16px', padding: '14px', background: '#0B1220', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ marginBottom: '18px', padding: '14px', background: '#0B1220', borderRadius: '10px', border: '1px solid rgba(79, 159, 255, 0.2)'}}>
+            <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <MessageSquare size={16} color="#4D9FFF" />
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#4D9FFF' }}>Domain Questions</span>
+            </div>
             <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
               {['quick', 'deep', 'experiments'].map(level => (
-                <button key={level} onClick={() => setGuidanceLevel(level)} style={{ padding: '6px 12px', background: guidanceLevel === level ? '#6C63FF' : '#1E293B', border: `1px solid ${guidanceLevel === level ? '#6C63FF' : 'rgba(148, 163, 184, 0.2)'}`, borderRadius: '6px', color: '#E6EEF8', cursor: 'pointer', fontSize: '13px', textTransform: 'capitalize', transition: 'all 0.15s' }}>{level}</button>
+                <button key={level} onClick={() => setGuidanceLevel(level)} style={{ padding: '6px 12px', background: guidanceLevel === level ? '#4D9FFF' : '#1E293B', border: `1px solid ${guidanceLevel === level ? '#4D9FFF' : 'rgba(148, 163, 184, 0.2)'}`, borderRadius: '6px', color: '#E6EEF8', cursor: 'pointer', fontSize: '13px', textTransform: 'capitalize', transition: 'all 0.15s' }}>{level}</button>
               ))}
             </div>
-            <ul style={{ margin: 0, paddingLeft: '20px', color: '#CBD5E1', fontSize: '13px', lineHeight: '1.7' }}>
-              {guidanceQuestions[guidanceLevel]?.slice(0, 5).map((q, i) => <li key={i} style={{ marginBottom: '8px' }}>{q}</li>)}
-            </ul>
+            {formData.domainIds.length === 0 ? (
+              <div style={{ fontSize: '12px', color: '#64748B', fontStyle: 'italic' }}>
+                Select a domain to see guiding questions
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {formData.domainIds.map(domainId => {
+                  const domainQuestions = domainQuestionBanks[domainId];
+                  if (!domainQuestions) return null;
+                  
+                  return (
+                    <div key={domainId} style={{
+                      padding: '10px',
+                      background: 'rgba(30, 41, 59, 0.4)',
+                      borderRadius: '6px',
+                      border: `1px solid ${domainColors[domainId]}30`
+                    }}>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        fontWeight: 600, 
+                        color: domainColors[domainId],
+                        marginBottom: '6px',
+                        textTransform: 'capitalize'
+                      }}>
+                        {domainId}
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: '18px', color: '#CBD5E1', fontSize: '12px', lineHeight: '1.6' }}>
+                        {domainQuestions[guidanceLevel]?.slice(0, 5).map((q, i) => (
+                          <li key={i} style={{ marginBottom: '4px' }}>{q}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
         

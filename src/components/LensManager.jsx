@@ -3,17 +3,20 @@ import React, { useState } from 'react';
 import { X, Plus, Edit2, Trash2 } from 'lucide-react';
 
 export default function LensManager({ lenses, onClose, onUpdate }) {
-  const [editingLenses, setEditingLenses] = useState([...lenses]);
-  const [newLens, setNewLens] = useState({ name: '', color: '#6C63FF' });
-
+  const [editingLenses, setEditingLenses] = useState([...lenses.map(l => ({
+    ...l,
+    questions: l.questions || ['', '']
+  }))]);
+  const [newLens, setNewLens] = useState({ name: '', color: '#6C63FF', questions: ['', ''] });
   const handleAddLens = () => {
     if (newLens.name && editingLenses.length < 10) {
       setEditingLenses([...editingLenses, {
         id: newLens.name.toLowerCase().replace(/\s+/g, '-'),
         name: newLens.name,
-        color: newLens.color
+        color: newLens.color,
+        questions: newLens.questions || ['', '']
       }]);
-      setNewLens({ name: '', color: '#6C63FF' });
+      setNewLens({ name: '', color: '#6C63FF', questions: ['', ''] });
     }
   };
 
@@ -21,10 +24,18 @@ export default function LensManager({ lenses, onClose, onUpdate }) {
     setEditingLenses(editingLenses.filter(l => l.id !== lensId));
   };
 
-  const handleUpdateLens = (lensId, field, value) => {
-    setEditingLenses(editingLenses.map(l => 
-      l.id === lensId ? { ...l, [field]: value } : l
-    ));
+  const handleUpdateLens = (lensId, field, value, questionIndex) => {
+    setEditingLenses(editingLenses.map(l => {
+      if (l.id === lensId) {
+        if (field === 'question') {
+          const newQuestions = [...(l.questions || ['', ''])];
+          newQuestions[questionIndex] = value;
+          return { ...l, questions: newQuestions };
+        }
+        return { ...l, [field]: value };
+      }
+      return l;
+    }));
   };
 
   const handleSave = () => {
@@ -127,60 +138,95 @@ export default function LensManager({ lenses, onClose, onUpdate }) {
             <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#94A3B8' }}>
               Existing Lenses
             </label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {editingLenses.map(lens => (
                 <div key={lens.id} style={{
-                  padding: '12px',
+                  padding: '16px',
                   background: '#1E293B',
                   borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
+                  border: '1px solid rgba(255,255,255,0.05)'
                 }}>
-                  <input
-                    type="color"
-                    value={lens.color}
-                    onChange={e => handleUpdateLens(lens.id, 'color', e.target.value)}
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      background: lens.color,
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer'
-                    }}
-                  />
-                  <input
-                    value={lens.name}
-                    onChange={e => handleUpdateLens(lens.id, 'name', e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: '8px',
-                      background: '#0F1724',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '6px',
-                      color: '#E6EEF8',
-                      fontSize: '14px'
-                    }}
-                  />
-                  <button
-                    onClick={() => handleDeleteLens(lens.id)}
-                    style={{
-                      padding: '8px',
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#EF4444',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '12px'
+                  }}>
+                    <input
+                      type="color"
+                      value={lens.color}
+                      onChange={e => handleUpdateLens(lens.id, 'color', e.target.value)}
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        background: lens.color,
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <input
+                      value={lens.name}
+                      onChange={e => handleUpdateLens(lens.id, 'name', e.target.value)}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        background: '#0F1724',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '6px',
+                        color: '#E6EEF8',
+                        fontSize: '14px'
+                      }}
+                    />
+                    <button
+                      onClick={() => handleDeleteLens(lens.id)}
+                      style={{
+                        padding: '8px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#EF4444',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  
+                  <div style={{ marginLeft: '48px' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      fontSize: '12px', 
+                      color: '#94A3B8', 
+                      marginBottom: '8px',
+                      fontWeight: 500
+                    }}>
+                      Guiding Questions
+                    </label>
+                    {(lens.questions || ['', '']).map((question, idx) => (
+                      <input
+                        key={idx}
+                        value={question}
+                        onChange={e => handleUpdateLens(lens.id, 'question', e.target.value, idx)}
+                        placeholder={`Question ${idx + 1}...`}
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          background: '#0F1724',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '6px',
+                          color: '#E6EEF8',
+                          fontSize: '13px',
+                          marginBottom: idx === 0 ? '6px' : '0',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-
         <div style={{
           padding: '20px',
           borderTop: '1px solid rgba(255,255,255,0.1)',
