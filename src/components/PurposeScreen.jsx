@@ -1,7 +1,8 @@
 // src/components/PurposeScreen.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, ArrowRight, Upload } from 'lucide-react';
-// Add custom scrollbar styles to document head once
+import { Sparkles, ArrowRight, Upload, Github, Linkedin, Mail, Coffee } from 'lucide-react';
+import logo from '../logo.PNG'
+
 export default function PurposeScreen({ onComplete, onSkip }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -212,51 +213,65 @@ export default function PurposeScreen({ onComplete, onSkip }) {
           pointerEvents: 'none'
         }}
       />
-{/* Logo - Top Left */}
+
+      {/* Logo - Top Left */}
       <div style={{
         position: 'absolute',
         top: '40px',
         left: '40px',
-        zIndex: 2
+        zIndex: 2,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px'
       }}>
-        <h1 style={{
-          margin: 0,
-          fontSize: '28px',
-          fontWeight: 700,
-          background: 'linear-gradient(135deg, #6C63FF 0%, #4D9FFF 50%, #A78BFA 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          letterSpacing: '-0.5px',
-          transition: 'all 0.3s ease'
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.background = 'linear-gradient(135deg, #A78BFA 0%, #6C63FF 50%, #4D9FFF 100%)';
-          e.target.style.WebkitBackgroundClip = 'text';
-          e.target.style.backgroundClip = 'text';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'linear-gradient(135deg, #6C63FF 0%, #4D9FFF 50%, #A78BFA 100%)';
-          e.target.style.WebkitBackgroundClip = 'text';
-          e.target.style.backgroundClip = 'text';
-        }}
-        >
-          Chroma
-        </h1>
-        <p style={{
-          margin: '4px 0 0 0',
-          fontSize: '12px',
-          color: '#94A3B8',
-          fontWeight: 500,
-          letterSpacing: '0.3px'
-        }}>
-          Your Perception, Amplified
-        </p>
+        <img 
+          src={logo}
+          alt="Chroma Logo" 
+          style={{
+            width: '48px',
+            height: '48px',
+            filter: 'drop-shadow(0 4px 12px rgba(108, 99, 255, 0.4))'
+          }}
+        />
+        <div>
+          <h1 style={{
+            margin: 0,
+            fontSize: '28px',
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #6C63FF 0%, #4D9FFF 50%, #A78BFA 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            letterSpacing: '-0.5px',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = 'linear-gradient(135deg, #A78BFA 0%, #6C63FF 50%, #4D9FFF 100%)';
+            e.target.style.WebkitBackgroundClip = 'text';
+            e.target.style.backgroundClip = 'text';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'linear-gradient(135deg, #6C63FF 0%, #4D9FFF 50%, #A78BFA 100%)';
+            e.target.style.WebkitBackgroundClip = 'text';
+            e.target.style.backgroundClip = 'text';
+          }}
+          >
+            Chroma
+          </h1>
+          <p style={{
+            margin: '4px 0 0 0',
+            fontSize: '12px',
+            color: '#94A3B8',
+            fontWeight: 500,
+            letterSpacing: '0.3px'
+          }}>
+            Your Perception, Amplified
+          </p>
+        </div>
       </div>
 
       {/* Form card */}
-      <div 
-        style={{
+      <div style={{
         position: 'relative',
         zIndex: 1,
         width: '500px',
@@ -456,7 +471,9 @@ export default function PurposeScreen({ onComplete, onSkip }) {
               }}
             />
           </div>
+
           <button
+            type="button"
             onClick={handleImport}
             style={{
               width: '100%',
@@ -486,8 +503,9 @@ export default function PurposeScreen({ onComplete, onSkip }) {
           >
             <Upload size={18} /> Import Existing Map
           </button>
+
           <button
-            onClick={handleSubmit}
+            type="submit"
             style={{
               width: '100%',
               padding: '14px',
@@ -518,6 +536,7 @@ export default function PurposeScreen({ onComplete, onSkip }) {
           </button>
 
           <button
+            type="button"
             onClick={handleSkip}
             style={{
               width: '100%',
@@ -536,7 +555,52 @@ export default function PurposeScreen({ onComplete, onSkip }) {
             Skip for now
           </button>
         </form>
+      </div>
+
+      {/* Footer - Socials & Copyright */}
+      <div style={{
+        position: 'fixed',
+        bottom: '20px',
+        right: '20px',
+        zIndex: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+        gap: '12px'
+      }}>
+        {/* Social Links */}
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          padding: '12px',
+          background: 'rgba(15, 23, 36, 0.8)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '12px',
+          border: '1px solid rgba(108, 99, 255, 0.2)'
+        }}>
+          <a href="https://github.com/Oceanyx" target="_blank" rel="noopener noreferrer" style={{ color: '#88CCFF', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'} onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}>
+            <Github size={24} />
+          </a>
+          <a href="https://www.linkedin.com/in/oceanyx/" target="_blank" rel="noopener noreferrer" style={{ color: '#4D9FFF', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'} onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}>
+            <Linkedin size={24} />
+          </a>
+          <a href="mailto:bchanyx@gmail.com" style={{ color: '#10B981', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'} onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}>
+            <Mail size={24} />
+          </a>
+          <a href="https://ko-fi.com/oceanyx" target="_blank" rel="noopener noreferrer" style={{ color: '#FF5E5B', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'} onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}>
+            <Coffee size={24} />
+          </a>
+        </div>
+
+        {/* Copyright */}
+        <div style={{
+          fontSize: '12px',
+          color: '#64748B',
+          textAlign: 'right'
+        }}>
+          © 2024 Oceanyx · Brian Chan
         </div>
       </div>
+    </div>
   );
 }
