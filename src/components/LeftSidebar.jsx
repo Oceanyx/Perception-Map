@@ -1,6 +1,6 @@
 // src/components/LeftSidebar.jsx
 import React, { useState } from 'react';
-import { Upload, FileJson, Camera, Target, Map, MousePointer, Hand, ExternalLink, Coffee, Undo, Redo } from 'lucide-react';
+import { Upload, FileJson, Camera, Target, Map, MousePointer, Hand, ExternalLink, Coffee, Undo, Redo, Settings } from 'lucide-react';
 
 export default function LeftSidebar({ 
   onImport, 
@@ -13,23 +13,23 @@ export default function LeftSidebar({
   canUndo,
   canRedo,
   tool,
-  onToolChange
+  onToolChange,
+  onShowPreferences
 }) {
   const [hoveredIcon, setHoveredIcon] = useState(null);
 
-const iconButtons = [
-    { id: 'import', icon: Upload, label: 'Import Map', action: onImport, color: '#10B981', hoverBg: 'rgba(16, 185, 129, 0.2)' },
-    { id: 'export-json', icon: FileJson, label: 'Export JSON', action: onExportJSON, color: '#6C63FF', hoverBg: 'rgba(108, 99, 255, 0.2)' },
-    { id: 'export-png', icon: Camera, label: 'Export PNG', action: onExportPNG, color: '#A78BFA', hoverBg: 'rgba(167, 139, 250, 0.2)' },
-    { id: 'purpose', icon: Target, label: 'View Purpose', action: onShowPurpose, color: '#F59E0B', hoverBg: 'rgba(245, 158, 11, 0.2)' },
-    { id: 'legend', icon: Map, label: 'Legend', action: onShowLegend, color: '#4D9FFF', hoverBg: 'rgba(77, 159, 255, 0.2)' },
-    { id: 'website', icon: ExternalLink, label: 'Visit Oceanyx.dev', action: () => window.open('https://oceanyx.github.io', '_blank'), color: '#88CCFF', hoverBg: 'rgba(136, 204, 255, 0.2)' },
-    { id: 'kofi', icon: Coffee, label: 'Support on Ko-fi', action: () => window.open('https://ko-fi.com/oceanyx', '_blank'), color: '#FF5E5B', hoverBg: 'rgba(255, 94, 91, 0.2)' }
-  ];
+  const iconButtons = [
+      { id: 'import', icon: Upload, label: 'Import Map', action: onImport, color: '#10B981', hoverBg: 'rgba(16, 185, 129, 0.2)' },
+      { id: 'export-json', icon: FileJson, label: 'Export JSON', action: onExportJSON, color: '#6C63FF', hoverBg: 'rgba(108, 99, 255, 0.2)' },
+      { id: 'export-png', icon: Camera, label: 'Export PNG', action: onExportPNG, color: '#A78BFA', hoverBg: 'rgba(167, 139, 250, 0.2)' },
+      { id: 'purpose', icon: Target, label: 'View Purpose', action: onShowPurpose, color: '#F59E0B', hoverBg: 'rgba(245, 158, 11, 0.2)' },
+      { id: 'legend', icon: Map, label: 'Legend', action: onShowLegend, color: '#4D9FFF', hoverBg: 'rgba(77, 159, 255, 0.2)' },
+    ];
 
   const toolButtons = [
     { id: 'undo', icon: Undo, label: 'Undo (Ctrl+Z)', action: onUndo, color: '#94A3B8', disabled: !canUndo },
     { id: 'redo', icon: Redo, label: 'Redo (Ctrl+Shift+Z)', action: onRedo, color: '#94A3B8', disabled: !canRedo },
+    { id: 'preferences', icon: Settings, label: 'Preferences', action: onShowPreferences, color: '#94A3B8' },
     { id: 'select', icon: MousePointer, label: 'Select Tool (V)' },
     { id: 'hand', icon: Hand, label: 'Hand Tool (H)' }
   ];
