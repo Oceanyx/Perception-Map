@@ -115,7 +115,7 @@ return (
           return (
             <div key={btn.id} style={{ position: 'relative' }}>
               <button
-                onClick={() => onToolChange(btn.id)}
+                onClick={btn.action || (() => onToolChange(btn.id))}
                 disabled={btn.disabled}
                 onMouseEnter={() => setHoveredIcon(btn.id)}
                 onMouseLeave={() => setHoveredIcon(null)}

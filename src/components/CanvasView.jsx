@@ -30,13 +30,14 @@ export default function CanvasView({purposeData}) {
   const [isUndoRedoing, setIsUndoRedoing] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
+  const [mapTitle, setMapTitle] = useState(purposeData?.title || 'Untitled Map');
   const [focusedDomain, setFocusedDomain] = useState(null);
   const [showLegend, setShowLegend] = useState(false);
   const [showPurposeModal, setShowPurposeModal] = useState(false);
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [lenses, setLenses] = useState(defaultLenses);
-  const [selectedNode, setSelectedNode] = useState(null);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [activeLensIds, setActiveLensIds] = useState([]);
   const [activeFilters, setActiveFilters] = useState({ domains: [], modes: [] });
@@ -53,6 +54,7 @@ export default function CanvasView({purposeData}) {
   const [tool, setTool] = useState('select'); // 'select' or 'hand'
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
+  const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null;
 
   // Shared recent meta-tags (persisted to localStorage)
   const [recentMetaTags, setRecentMetaTags] = useState(() => {
@@ -93,8 +95,7 @@ export default function CanvasView({purposeData}) {
   }
   loadData();
 }, []);
-// Save state to history (called after any change)
-  const saveToHistory = useCallback((newNodes, newEdges) => {
+const saveToHistory = useCallback((newNodes, newEdges) => {
   if (isUndoRedoing) return;
   
   const snapshot = {
@@ -103,75 +104,92 @@ export default function CanvasView({purposeData}) {
     timestamp: Date.now()
   };
   
-  setHistory(prev => {
-    const newHistory = prev.slice(0, historyIndex + 1);
-    newHistory.push(snapshot);
-    return newHistory.slice(-50);
+  setHistoryIndex(currentIndex => {
+    setHistory(currentHistory => {
+      const newHistory = currentHistory.slice(0, currentIndex + 1);
+      newHistory.push(snapshot);
+      return newHistory.slice(-50);
+    });
+    return currentIndex + 1;
   });
-  
-  setHistoryIndex(prev => {
-    const currentLength = history.slice(0, historyIndex + 1).length;
-    return Math.min(currentLength, 49);
-  });
-}, [historyIndex, isUndoRedoing, history]);
+}, [isUndoRedoing]);
 
-  // Undo function
   const handleUndo = useCallback(async () => {
-    if (historyIndex <= 0) return;
+  setHistoryIndex(currentIndex => {
+    if (currentIndex <= 0) return currentIndex;
     
     setIsUndoRedoing(true);
-    const prevState = history[historyIndex - 1];
     
-    // Update database
-    await db.nodes.clear();
-    await db.edges.clear();
-    await db.nodes.bulkAdd(prevState.nodes);
-    await db.edges.bulkAdd(prevState.edges);
+    setHistory(currentHistory => {
+      const prevState = currentHistory[currentIndex - 1];
+      
+      // Update database and UI
+      (async () => {
+        await db.nodes.clear();
+        await db.edges.clear();
+        await db.nodes.bulkAdd(prevState.nodes);
+        await db.edges.bulkAdd(prevState.edges);
+        
+        setNodes(prevState.nodes);
+        setEdges(prevState.edges);
+        
+        setTimeout(() => setIsUndoRedoing(false), 100);
+      })();
+      
+      return currentHistory;
+    });
     
-    // Update UI
-    setNodes(prevState.nodes);
-    setEdges(prevState.edges);
-    setHistoryIndex(prev => prev - 1);
-    
-    setTimeout(() => setIsUndoRedoing(false), 100);
-  }, [history, historyIndex]);
+    return currentIndex - 1;
+  });
+}, []);
 
-  // Redo function
-  const handleRedo = useCallback(async () => {
-    if (historyIndex >= history.length - 1) return;
-    
-    setIsUndoRedoing(true);
-    const nextState = history[historyIndex + 1];
-    
-    // Update database
-    await db.nodes.clear();
-    await db.edges.clear();
-    await db.nodes.bulkAdd(nextState.nodes);
-    await db.edges.bulkAdd(nextState.edges);
-    
-    // Update UI
-    setNodes(nextState.nodes);
-    setEdges(nextState.edges);
-    setHistoryIndex(prev => prev + 1);
-    
-    setTimeout(() => setIsUndoRedoing(false), 100);
-  }, [history, historyIndex]);
+const handleRedo = useCallback(async () => {
+  // Check if redo is available first
+  if (historyIndex >= history.length - 1) {
+    console.log('No redo available', historyIndex, history.length);
+    return;
+  }
+  
+  setIsUndoRedoing(true);
+  const nextState = history[historyIndex + 1];
+  console.log('Redoing to state:', historyIndex + 1);
+  
+  // Update database
+  await db.nodes.clear();
+  await db.edges.clear();
+  await db.nodes.bulkAdd(nextState.nodes);
+  await db.edges.bulkAdd(nextState.edges);
+  
+  // Update UI state
+  setNodes(nextState.nodes);
+  setEdges(nextState.edges);
+  setHistoryIndex(historyIndex + 1);
+  
+  setTimeout(() => setIsUndoRedoing(false), 100);
+}, [history, historyIndex]);
 
-  // Keyboard shortcuts for undo/redo
-  useEffect(() => {
-    const handleKeyboard = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        handleUndo();
-      } else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
-        e.preventDefault();
-        handleRedo();
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyboard);
-    return () => window.removeEventListener('keydown', handleKeyboard);
-  }, [handleUndo, handleRedo]);
+useEffect(() => {
+  const handleKeyboard = (e) => {
+    // Check for Ctrl+Z (undo)
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      // console.log('Undo triggered');
+      handleUndo();
+    } 
+    // Check for Ctrl+Shift+Z or Ctrl+Y (redo)
+    else if ((e.metaKey || e.ctrlKey) && (
+      (e.shiftKey && e.key.toLowerCase() === 'z') || 
+      e.key.toLowerCase() === 'y'
+    )) {
+      e.preventDefault();
+      // console.log('Redo triggered');
+      handleRedo();
+    }
+  };
+  
+  window.addEventListener('keydown', handleKeyboard);
+  return () => window.removeEventListener('keydown', handleKeyboard);
+}, [handleUndo, handleRedo]);
 
   // Save initial state to history
   useEffect(() => {
@@ -312,8 +330,7 @@ export default function CanvasView({purposeData}) {
   const handleNodeClick = (node, e) => {
     e.stopPropagation();
     if (node.type === 'content' && tool === 'select') {
-      const freshNode = nodes.find(n => n.id === node.id);
-      setSelectedNode(freshNode ? { ...freshNode } : node);
+      setSelectedNodeId(node.id);
     }
   };
 
@@ -343,13 +360,6 @@ const handleUpdateNode = useCallback(async (nodeId, newData) => {
     }, 0);
     
     return updatedNodes;
-  });
-  
-  setSelectedNode(current => {
-    if (current && current.id === nodeId) {
-      return { ...current, data: { ...current.data, ...newData } };
-    }
-    return current;
   });
 }, [edges, saveToHistory]);
 
@@ -444,7 +454,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
       nodes,
       edges,
       lenses,
-      purposeData,
+      purposeData: { ...purposeData, title: mapTitle },
       exportedAt: new Date().toISOString()
     };
     
@@ -452,7 +462,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `perception-map-${purposeData?.title.replace(/\s+/g, '-').toLowerCase() || 'untitled'}-${Date.now()}.json`;
+    a.download = `perception-map-${mapTitle.replace(/\s+/g, '-').toLowerCase() || 'untitled'}-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -711,7 +721,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
     }
 
     // Temporarily hide UI elements
-    setSelectedNode(null); // Close detail panel
+    setSelectedNodeId(null); // Close detail panel
     setShowAnalytics(false);
     setShowLensManager(false);
     setShowFilters(false);
@@ -733,7 +743,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `chroma-${purposeData?.title.replace(/\s+/g, '-').toLowerCase() || 'untitled'}-${Date.now()}.png`;
+        a.download = `chroma-${mapTitle.replace(/\s+/g, '-').toLowerCase() || 'untitled'}-${Date.now()}.png`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -918,193 +928,300 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
       flexDirection: 'column'
     }}>
       {/* Top Navigation Bar */}
-      <div style={{
-        height: '60px',
-        background: '#1E293B',
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
+<div style={{
+  height: '60px',
+  background: 'linear-gradient(180deg, #1E293B 0%, #1A2332 100%)',
+  borderBottom: '1px solid rgba(108, 99, 255, 0.2)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '0 24px',
+  zIndex: 100,
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+}}>
+  {/* Left: Title */}
+  <div style={{ flex: '0 0 250px' }}>
+    {isEditingTitle ? (
+      <input
+        value={editedTitle}
+        onChange={(e) => setEditedTitle(e.target.value)}
+        onBlur={() => {
+          if (editedTitle.trim()) {
+            setMapTitle(editedTitle.trim());
+          }
+          setIsEditingTitle(false);
+        }}
+        onKeyPress={(e) => {
+          if (e.key === 'Enter') {
+            if (editedTitle.trim()) {
+              setMapTitle(editedTitle.trim());
+            }
+            setIsEditingTitle(false);
+          }
+        }}
+        autoFocus
+        style={{
+          fontSize: '16px',
+          fontWeight: 600,
+          background: 'rgba(30, 41, 59, 0.6)',
+          border: '1px solid rgba(108, 99, 255, 0.5)',
+          borderRadius: '8px',
+          color: '#E6EEF8',
+          padding: '8px 12px',
+          outline: 'none',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}
+      />
+    ) : (
+      <h1 
+        onClick={() => {
+          setEditedTitle(mapTitle);
+          setIsEditingTitle(true);
+        }}
+        style={{
+          margin: 0,
+          fontSize: '16px',
+          fontWeight: 600,
+          color: '#E6EEF8',
+          cursor: 'pointer',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          transition: 'all 0.2s',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.background = 'rgba(108, 99, 255, 0.15)';
+          e.target.style.transform = 'translateX(2px)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'transparent';
+          e.target.style.transform = 'translateX(0)';
+        }}
+      >
+        {mapTitle}
+      </h1>
+    )}
+  </div>
+
+  {/* Center: Domain Selector */}
+  <div style={{
+    flex: '0 0 auto',
+    display: 'flex',
+    gap: '6px',
+    padding: '6px',
+    background: 'rgba(15, 23, 36, 0.6)',
+    borderRadius: '10px',
+    border: '1px solid rgba(255, 255, 255, 0.08)'
+  }}>
+    {['all', 'private', 'public', 'abstract'].map(mode => (
+      <button
+        key={mode}
+        onClick={() => {
+          setViewMode(mode);
+          if (mode !== 'all') {
+            handleDomainFocus(mode);
+          } else {
+            setFocusedDomain(null);
+            handleResetView();
+          }
+        }}
+        style={{
+          padding: '8px 16px',
+          background: focusedDomain === mode || (viewMode === mode && !focusedDomain) 
+            ? (mode === 'all' ? '#6C63FF' : domainColors[mode]) 
+            : 'transparent',
+          border: 'none',
+          borderRadius: '7px',
+          color: focusedDomain === mode || (viewMode === mode && !focusedDomain) 
+            ? (mode === 'all' ? '#fff' : '#0F1724') 
+            : '#94A3B8',
+          cursor: 'pointer',
+          fontSize: '13px',
+          fontWeight: focusedDomain === mode || (viewMode === mode && !focusedDomain) ? 600 : 500,
+          textTransform: 'capitalize',
+          transition: 'all 0.2s',
+          whiteSpace: 'nowrap'
+        }}
+        onMouseEnter={(e) => {
+          if (!(focusedDomain === mode || (viewMode === mode && !focusedDomain))) {
+            e.target.style.background = 'rgba(148, 163, 184, 0.1)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!(focusedDomain === mode || (viewMode === mode && !focusedDomain))) {
+            e.target.style.background = 'transparent';
+          }
+        }}
+      >
+        {mode === 'all' ? 'All' : mode}
+      </button>
+    ))}
+  </div>
+
+  {/* Right: Lenses + Tools */}
+  <div style={{ flex: '0 0 auto', display: 'flex', gap: '12px', alignItems: 'center' }}>
+    {/* Lenses Group */}
+    <div style={{
+      display: 'flex',
+      gap: '6px',
+      padding: '6px',
+      background: 'rgba(15, 23, 36, 0.6)',
+      borderRadius: '10px',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      alignItems: 'center'
+    }}>
+      {lenses.slice(0, 4).map(lens => (
+        <button
+          key={lens.id}
+          onClick={() => setActiveLensIds(prev => 
+            prev.includes(lens.id) ? prev.filter(id => id !== lens.id) : [...prev, lens.id]
+          )}
+          style={{
+            padding: '6px 12px',
+            background: activeLensIds.includes(lens.id) ? lens.color : 'transparent',
+            border: 'none',
+            borderRadius: '6px',
+            color: activeLensIds.includes(lens.id) ? '#fff' : '#94A3B8',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: activeLensIds.includes(lens.id) ? 600 : 500,
+            transition: 'all 0.2s',
+            whiteSpace: 'nowrap'
+          }}
+          onMouseEnter={(e) => {
+            if (!activeLensIds.includes(lens.id)) {
+              e.target.style.background = 'rgba(148, 163, 184, 0.1)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!activeLensIds.includes(lens.id)) {
+              e.target.style.background = 'transparent';
+            }
+          }}
+        >
+          {lens.name}
+        </button>
+      ))}
+      
+      <button
+        onClick={() => setShowLensManager(true)}
+        style={{
+          padding: '6px 8px',
+          background: 'transparent',
+          border: 'none',
+          borderRadius: '6px',
+          color: '#94A3B8',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          transition: 'all 0.2s'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.background = 'rgba(148, 163, 184, 0.1)';
+          e.target.style.color = '#E6EEF8';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'transparent';
+          e.target.style.color = '#94A3B8';
+        }}
+      >
+        <Edit2 size={16} />
+      </button>
+    </div>
+
+    {/* Divider */}
+    <div style={{ width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)' }} />
+
+    {/* Action Buttons */}
+    <button
+      onClick={() => setShowFilters(!showFilters)}
+      style={{
+        padding: '8px 12px',
+        background: showFilters ? '#6C63FF' : 'rgba(15, 23, 36, 0.6)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: '8px',
+        color: '#E6EEF8',
+        cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 20px',
-        zIndex: 100
-      }}>
-        {/* Title Section */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {isEditingTitle ? (
-            <input
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-              onBlur={() => {
-                setIsEditingTitle(false);
-                // Here you'd want to update purposeData.title if needed
-              }}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  setIsEditingTitle(false);
-                }
-              }}
-              autoFocus
-              style={{
-                fontSize: '16px',
-                fontWeight: 600,
-                background: 'rgba(30, 41, 59, 0.6)',
-                border: '1px solid rgba(108, 99, 255, 0.5)',
-                borderRadius: '6px',
-                color: '#E6EEF8',
-                padding: '6px 12px',
-                outline: 'none',
-                minWidth: '200px'
-              }}
-            />
-          ) : (
-            <h1 
-              onClick={() => {
-                setEditedTitle(purposeData?.title || 'Untitled Map');
-                setIsEditingTitle(true);
-              }}
-              style={{
-                margin: 0,
-                fontSize: '16px',
-                fontWeight: 600,
-                color: '#E6EEF8',
-                cursor: 'pointer',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => e.target.style.background = 'rgba(108, 99, 255, 0.1)'}
-              onMouseLeave={(e) => e.target.style.background = 'transparent'}
-            >
-              {purposeData?.title || 'Untitled Map'}
-            </h1>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {['all', 'private', 'public', 'abstract'].map(mode => (
-            <button
-              key={mode}
-              onClick={() => {
-                setViewMode(mode);
-                if (mode !== 'all') {
-                  handleDomainFocus(mode);
-                } else {
-                  setFocusedDomain(null);
-                  handleResetView();
-                }
-              }}
-              style={{
-                padding: '8px 16px',
-                background: focusedDomain === mode || (viewMode === mode && !focusedDomain) ? '#6C63FF' : 'transparent',
-                border: focusedDomain === mode || (viewMode === mode && !focusedDomain) ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                color: '#E6EEF8',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: focusedDomain === mode || (viewMode === mode && !focusedDomain) ? 600 : 400,
-                textTransform: 'capitalize',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              {mode === 'all' ? 'All Domains' : `${focusedDomain === mode ? '◀ ' : ''}${mode}`}
-            </button>
-          ))}
-        </div>
+        gap: '6px',
+        fontSize: '13px',
+        fontWeight: 500,
+        transition: 'all 0.2s'
+      }}
+      onMouseEnter={(e) => {
+        if (!showFilters) {
+          e.target.style.background = 'rgba(108, 99, 255, 0.2)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!showFilters) {
+          e.target.style.background = 'rgba(15, 23, 36, 0.6)';
+        }
+      }}
+    >
+      <Filter size={16} /> Filter
+    </button>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {lenses.map(lens => (
-            <button
-              key={lens.id}
-              onClick={() => setActiveLensIds(prev => 
-                prev.includes(lens.id) ? prev.filter(id => id !== lens.id) : [...prev, lens.id]
-              )}
-              style={{
-                padding: '6px 12px',
-                background: activeLensIds.includes(lens.id) ? lens.color : 'transparent',
-                border: `1px solid ${activeLensIds.includes(lens.id) ? lens.color : 'rgba(255,255,255,0.1)'}`,
-                borderRadius: '6px',
-                color: '#E6EEF8',
-                cursor: 'pointer',
-                fontSize: '13px'
-              }}
-            >
-              {lens.name}
-            </button>
-          ))}
+    <button
+      onClick={() => setShowAnalytics(true)}
+      style={{
+        padding: '8px 12px',
+        background: 'rgba(15, 23, 36, 0.6)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: '8px',
+        color: '#E6EEF8',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        fontSize: '13px',
+        fontWeight: 500,
+        transition: 'all 0.2s'
+      }}
+      onMouseEnter={(e) => {
+        e.target.style.background = 'rgba(79, 159, 255, 0.2)';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.background = 'rgba(15, 23, 36, 0.6)';
+      }}
+    >
+      <BarChart3 size={16} /> Analytics
+    </button>
 
-          <button
-            onClick={() => setShowLensManager(true)}
-            style={{
-              padding: '8px',
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '6px',
-              color: '#94A3B8',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-          >
-            <Edit2 size={16} />
-          </button>
-
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            style={{
-              padding: '8px 12px',
-              background: showFilters ? '#6C63FF' : 'transparent',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '6px',
-              color: '#E6EEF8',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '14px'
-            }}
-          >
-            <Filter size={16} /> Filter
-          </button>
-
-          <button
-            onClick={() => setShowAnalytics(true)}
-            style={{
-              padding: '8px 12px',
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '6px',
-              color: '#E6EEF8',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '14px'
-            }}
-          >
-            <BarChart3 size={16} /> Analytics
-          </button>
-
-          <button
-            onClick={handleCreateNode}
-            style={{
-              padding: '8px 12px',
-              background: '#10B981',
-              border: 'none',
-              borderRadius: '6px',
-              color: '#fff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '14px',
-              fontWeight: 500
-            }}
-          >
-            <Plus size={16} /> New Node
-          </button>
-        </div>
-      </div>
+    <button
+      onClick={handleCreateNode}
+      style={{
+        padding: '8px 16px',
+        background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+        border: 'none',
+        borderRadius: '8px',
+        color: '#fff',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        fontSize: '13px',
+        fontWeight: 600,
+        transition: 'all 0.2s',
+        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+      }}
+      onMouseEnter={(e) => {
+        e.target.style.transform = 'translateY(-1px)';
+        e.target.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.transform = 'translateY(0)';
+        e.target.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.3)';
+      }}
+    >
+      <Plus size={16} /> New Node
+    </button>
+  </div>
+</div>
 
       {/* Left Sidebar */}
       <LeftSidebar
@@ -1461,7 +1578,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
         <NodeDetailPanel
           key={selectedNode.id}
           node={selectedNode}
-          onClose={() => setSelectedNode(null)}
+          onClose={() => setSelectedNodeId(null)}
           onUpdate={handleUpdateNode}
           onDelete={handleDeleteNode}
           lenses={lenses}
