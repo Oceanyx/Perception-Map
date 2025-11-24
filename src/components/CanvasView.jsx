@@ -95,25 +95,25 @@ export default function CanvasView({purposeData}) {
 }, []);
 // Save state to history (called after any change)
   const saveToHistory = useCallback((newNodes, newEdges) => {
-    if (isUndoRedoing) return; // Don't save during undo/redo
-    
-    const snapshot = {
-      nodes: JSON.parse(JSON.stringify(newNodes)),
-      edges: JSON.parse(JSON.stringify(newEdges)),
-      timestamp: Date.now()
-    };
-    
-    setHistory(prev => {
-      // Remove any future history if we're not at the end
-      const newHistory = prev.slice(0, historyIndex + 1);
-      // Add new snapshot
-      newHistory.push(snapshot);
-      // Limit history to last 50 states
-      return newHistory.slice(-50);
-    });
-    
-    setHistoryIndex(prev => Math.min(prev + 1, 49));
-  }, [historyIndex, isUndoRedoing]);
+  if (isUndoRedoing) return;
+  
+  const snapshot = {
+    nodes: JSON.parse(JSON.stringify(newNodes)),
+    edges: JSON.parse(JSON.stringify(newEdges)),
+    timestamp: Date.now()
+  };
+  
+  setHistory(prev => {
+    const newHistory = prev.slice(0, historyIndex + 1);
+    newHistory.push(snapshot);
+    return newHistory.slice(-50);
+  });
+  
+  setHistoryIndex(prev => {
+    const currentLength = history.slice(0, historyIndex + 1).length;
+    return Math.min(currentLength, 49);
+  });
+}, [historyIndex, isUndoRedoing, history]);
 
   // Undo function
   const handleUndo = useCallback(async () => {
@@ -287,24 +287,27 @@ export default function CanvasView({purposeData}) {
   };
 
   const handleDragEnd = async (e, node) => {
-    if (node.type === 'content' && canvasRef.current) {
-      const canvasRect = canvasRef.current.getBoundingClientRect();
-      const newX = (e.clientX - canvasRect.left - dragOffset.x - pan.x) / zoom;
-      const newY = (e.clientY - canvasRect.top - dragOffset.y - pan.y) / zoom;
-      
-      const newPos = { x: newX, y: newY };
-      const domainIds = getDomainsAtPosition(newPos);
+  if (node.type === 'content' && canvasRef.current) {
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const newX = (e.clientX - canvasRect.left - dragOffset.x - pan.x) / zoom;
+    const newY = (e.clientY - canvasRect.top - dragOffset.y - pan.y) / zoom;
+    
+    const newPos = { x: newX, y: newY };
+    const domainIds = getDomainsAtPosition(newPos);
 
-      await dbUpdateNode(node.id, { position: newPos, data: { ...node.data, domainIds } });
-      
-      setNodes(current => current.map(n => 
-        n.id === node.id
-          ? { ...n, position: newPos, data: { ...n.data, domainIds } }
-          : n
-      ));
-    }
-    setDraggingNode(null);
-  };
+    await dbUpdateNode(node.id, { position: newPos, data: { ...node.data, domainIds } });
+    
+    const updatedNodes = nodes.map(n => 
+      n.id === node.id
+        ? { ...n, position: newPos, data: { ...n.data, domainIds } }
+        : n
+    );
+    
+    setNodes(updatedNodes);
+    saveToHistory(updatedNodes, edges);
+  }
+  setDraggingNode(null);
+};
 
   const handleNodeClick = (node, e) => {
     e.stopPropagation();
@@ -325,22 +328,30 @@ export default function CanvasView({purposeData}) {
   };
 
 const handleUpdateNode = useCallback(async (nodeId, newData) => {
-    await dbUpdateNode(nodeId, { data: newData });
-    const updatedNodes = nodes.map(node => 
+  await dbUpdateNode(nodeId, { data: newData });
+  
+  setNodes(currentNodes => {
+    const updatedNodes = currentNodes.map(node => 
       node.id === nodeId 
         ? { ...node, data: { ...node.data, ...newData } }
         : node
     );
-    setNodes(updatedNodes);
-    saveToHistory(updatedNodes, edges);
     
-    setSelectedNode(current => {
-      if (current && current.id === nodeId) {
-        return { ...current, data: { ...current.data, ...newData } };
-      }
-      return current;
-    });
-  }, [nodes, edges, saveToHistory]);
+    // Save to history after state update
+    setTimeout(() => {
+      saveToHistory(updatedNodes, edges);
+    }, 0);
+    
+    return updatedNodes;
+  });
+  
+  setSelectedNode(current => {
+    if (current && current.id === nodeId) {
+      return { ...current, data: { ...current.data, ...newData } };
+    }
+    return current;
+  });
+}, [edges, saveToHistory]);
 
   const handleDeleteNode = useCallback(async (nodeId) => {
     await dbDeleteNode(nodeId);
@@ -1109,7 +1120,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
         tool={tool}
         onToolChange={setTool}
       />
-      
+
 {/* Zoom Controls - Bottom Right */}
       <div style={{
         position: 'absolute',
