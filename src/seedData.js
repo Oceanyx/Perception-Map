@@ -8,21 +8,21 @@ export const domainColors = {
 
 export const defaultLenses = [
   { 
-    id: 'empathy', 
-    name: 'Empathy', 
+    id: 'psychological', 
+    name: 'Psychological', 
     color: '#EC4899',
     questions: [
-      'What might this person be feeling or needing?',
-      'How would I feel if I were in their position?'
+      'What inner drives, fears, or wounds might be active here?',
+      'What ego patterns or habits am I noticing in myself?'
     ]
   },
   { 
-    id: 'systems', 
-    name: 'Systems', 
-    color: '#3B82F6',
+    id: 'somatic', 
+    name: 'Somatic', 
+    color: '#F59E0B',
     questions: [
-      'What larger patterns or structures are at play here?',
-      'How do the parts of this system influence each other?'
+      'What is my body telling me through sensations or tension?',
+      'Where do I feel this physically, and what energy is present?'
     ]
   },
   { 
@@ -30,8 +30,44 @@ export const defaultLenses = [
     name: 'Aesthetic', 
     color: '#8B5CF6',
     questions: [
-      'What beauty or harmony am I noticing?',
-      'How does this feel in terms of texture, rhythm, or flow?'
+      'What is the felt quality, vibe, or texture of this moment?',
+      'What beauty or symbolic meaning do I perceive here?'
+    ]
+  },
+  { 
+    id: 'empathy', 
+    name: 'Empathy', 
+    color: '#10B981',
+    questions: [
+      'How might this feel from someone else\'s inner world?',
+      'What might they be needing or experiencing right now?'
+    ]
+  },
+  { 
+    id: 'systems', 
+    name: 'Systems', 
+    color: '#3B82F6',
+    questions: [
+      'What structures, incentives, or constraints shape this situation?',
+      'How do the parts of this system influence each other?'
+    ]
+  },
+  { 
+    id: 'existential', 
+    name: 'Existential', 
+    color: '#6366F1',
+    questions: [
+      'What does this mean in the context of mortality and freedom?',
+      'Why does this matter, or what makes it significant?'
+    ]
+  },
+  { 
+    id: 'mythic', 
+    name: 'Mythic', 
+    color: '#EF4444',
+    questions: [
+      'What archetypal pattern or story is playing out here?',
+      'What role am I embodying (Hero, Shadow, Creator, Outsider)?'
     ]
   }
 ];

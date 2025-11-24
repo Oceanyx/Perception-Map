@@ -1,6 +1,6 @@
 // src/components/LeftSidebar.jsx
 import React, { useState } from 'react';
-import { Upload, FileJson, Camera, Target, Map, MousePointer, Hand } from 'lucide-react';
+import { Upload, FileJson, Camera, Target, Map, MousePointer, Hand, ExternalLink, Coffee, Undo, Redo } from 'lucide-react';
 
 export default function LeftSidebar({ 
   onImport, 
@@ -8,20 +8,28 @@ export default function LeftSidebar({
   onExportPNG, 
   onShowPurpose, 
   onShowLegend,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
   tool,
   onToolChange
 }) {
   const [hoveredIcon, setHoveredIcon] = useState(null);
 
-  const iconButtons = [
+const iconButtons = [
     { id: 'import', icon: Upload, label: 'Import Map', action: onImport, color: '#10B981' },
     { id: 'export-json', icon: FileJson, label: 'Export JSON', action: onExportJSON, color: '#6C63FF' },
     { id: 'export-png', icon: Camera, label: 'Export PNG', action: onExportPNG, color: '#A78BFA' },
     { id: 'purpose', icon: Target, label: 'View Purpose', action: onShowPurpose, color: '#F59E0B' },
-    { id: 'legend', icon: Map, label: 'Legend', action: onShowLegend, color: '#4D9FFF' }
+    { id: 'legend', icon: Map, label: 'Legend', action: onShowLegend, color: '#4D9FFF' },
+    { id: 'website', icon: ExternalLink, label: 'Visit Oceanyx.dev', action: () => window.open('https://oceanyx.github.io', '_blank'), color: '#88CCFF' },
+    { id: 'kofi', icon: Coffee, label: 'Support on Ko-fi', action: () => window.open('https://ko-fi.com/oceanyx', '_blank'), color: '#FF5E5B' }
   ];
 
   const toolButtons = [
+    { id: 'undo', icon: Undo, label: 'Undo (Ctrl+Z)', action: onUndo, color: '#94A3B8', disabled: !canUndo },
+    { id: 'redo', icon: Redo, label: 'Redo (Ctrl+Shift+Z)', action: onRedo, color: '#94A3B8', disabled: !canRedo },
     { id: 'select', icon: MousePointer, label: 'Select Tool (V)' },
     { id: 'hand', icon: Hand, label: 'Hand Tool (H)' }
   ];
@@ -108,6 +116,7 @@ return (
             <div key={btn.id} style={{ position: 'relative' }}>
               <button
                 onClick={() => onToolChange(btn.id)}
+                disabled={btn.disabled}
                 onMouseEnter={() => setHoveredIcon(btn.id)}
                 onMouseLeave={() => setHoveredIcon(null)}
                 style={{

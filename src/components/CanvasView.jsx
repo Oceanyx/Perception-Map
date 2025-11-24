@@ -25,6 +25,11 @@ import {
 } from '../lib/db';
 
 export default function CanvasView({purposeData}) {
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isUndoRedoing, setIsUndoRedoing] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
   const [focusedDomain, setFocusedDomain] = useState(null);
   const [showLegend, setShowLegend] = useState(false);
   const [showPurposeModal, setShowPurposeModal] = useState(false);
@@ -88,7 +93,92 @@ export default function CanvasView({purposeData}) {
   }
   loadData();
 }, []);
+// Save state to history (called after any change)
+  const saveToHistory = useCallback((newNodes, newEdges) => {
+    if (isUndoRedoing) return; // Don't save during undo/redo
+    
+    const snapshot = {
+      nodes: JSON.parse(JSON.stringify(newNodes)),
+      edges: JSON.parse(JSON.stringify(newEdges)),
+      timestamp: Date.now()
+    };
+    
+    setHistory(prev => {
+      // Remove any future history if we're not at the end
+      const newHistory = prev.slice(0, historyIndex + 1);
+      // Add new snapshot
+      newHistory.push(snapshot);
+      // Limit history to last 50 states
+      return newHistory.slice(-50);
+    });
+    
+    setHistoryIndex(prev => Math.min(prev + 1, 49));
+  }, [historyIndex, isUndoRedoing]);
 
+  // Undo function
+  const handleUndo = useCallback(async () => {
+    if (historyIndex <= 0) return;
+    
+    setIsUndoRedoing(true);
+    const prevState = history[historyIndex - 1];
+    
+    // Update database
+    await db.nodes.clear();
+    await db.edges.clear();
+    await db.nodes.bulkAdd(prevState.nodes);
+    await db.edges.bulkAdd(prevState.edges);
+    
+    // Update UI
+    setNodes(prevState.nodes);
+    setEdges(prevState.edges);
+    setHistoryIndex(prev => prev - 1);
+    
+    setTimeout(() => setIsUndoRedoing(false), 100);
+  }, [history, historyIndex]);
+
+  // Redo function
+  const handleRedo = useCallback(async () => {
+    if (historyIndex >= history.length - 1) return;
+    
+    setIsUndoRedoing(true);
+    const nextState = history[historyIndex + 1];
+    
+    // Update database
+    await db.nodes.clear();
+    await db.edges.clear();
+    await db.nodes.bulkAdd(nextState.nodes);
+    await db.edges.bulkAdd(nextState.edges);
+    
+    // Update UI
+    setNodes(nextState.nodes);
+    setEdges(nextState.edges);
+    setHistoryIndex(prev => prev + 1);
+    
+    setTimeout(() => setIsUndoRedoing(false), 100);
+  }, [history, historyIndex]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyboard = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyboard);
+    return () => window.removeEventListener('keydown', handleKeyboard);
+  }, [handleUndo, handleRedo]);
+
+  // Save initial state to history
+  useEffect(() => {
+    if (nodes.length > 0 && history.length === 0) {
+      saveToHistory(nodes, edges);
+    }
+  }, [nodes, edges, history.length, saveToHistory]);
   // Keyboard shortcut for hand tool
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -234,26 +324,32 @@ export default function CanvasView({purposeData}) {
     setHoveredNode(null);
   };
 
-  const handleUpdateNode = useCallback(async (nodeId, newData) => {
+const handleUpdateNode = useCallback(async (nodeId, newData) => {
     await dbUpdateNode(nodeId, { data: newData });
-    setNodes(current => current.map(node => 
+    const updatedNodes = nodes.map(node => 
       node.id === nodeId 
         ? { ...node, data: { ...node.data, ...newData } }
         : node
-    ));
+    );
+    setNodes(updatedNodes);
+    saveToHistory(updatedNodes, edges);
+    
     setSelectedNode(current => {
       if (current && current.id === nodeId) {
         return { ...current, data: { ...current.data, ...newData } };
       }
       return current;
     });
-  }, []);
+  }, [nodes, edges, saveToHistory]);
 
   const handleDeleteNode = useCallback(async (nodeId) => {
     await dbDeleteNode(nodeId);
-    setNodes(current => current.filter(n => n.id !== nodeId));
-    setEdges(current => current.filter(e => e.source !== nodeId && e.target !== nodeId));
-  }, []);
+    const updatedNodes = nodes.filter(n => n.id !== nodeId);
+    const updatedEdges = edges.filter(e => e.source !== nodeId && e.target !== nodeId);
+    setNodes(updatedNodes);
+    setEdges(updatedEdges);
+    saveToHistory(updatedNodes, updatedEdges);
+  }, [nodes, edges, saveToHistory]);
 
   const handleCreateEdge = useCallback(async (newEdge) => {
     await addEdge(newEdge);
@@ -272,7 +368,9 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
       updates.label = connType?.name || updates.label;
     }
     await updateEdge(edgeId, updates);
-    setEdges(current => current.map(e => e.id === edgeId ? { ...e, ...updates } : e));
+    const updatedEdges = edges.map(e => e.id === edgeId ? { ...e, ...updates } : e);
+    setEdges(updatedEdges);
+    saveToHistory(nodes, updatedEdges);
   }, []);
   
   const handleUpdateLenses = useCallback(async (newLenses) => {
@@ -638,7 +736,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
 
   const handleCreateNode = async () => {
     const centerX = (window.innerWidth / 2 - pan.x) / zoom;
-    const centerY = (window.innerHeight / 2 - pan.y - 60) / zoom; // -60 for nav bar
+    const centerY = (window.innerHeight / 2 - pan.y - 60) / zoom;
     
     const newNode = {
       type: 'content',
@@ -665,8 +763,10 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
     
     const id = await addNode(newNode);
     const nodeWithId = { ...newNode, id };
-    setNodes(current => [...current, nodeWithId]);
+    const updatedNodes = [...nodes, nodeWithId];
+    setNodes(updatedNodes);
     setSelectedNode(nodeWithId);
+    saveToHistory(updatedNodes, edges);
   };
   
 
@@ -817,6 +917,57 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
         padding: '0 20px',
         zIndex: 100
       }}>
+        {/* Title Section */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {isEditingTitle ? (
+            <input
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              onBlur={() => {
+                setIsEditingTitle(false);
+                // Here you'd want to update purposeData.title if needed
+              }}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  setIsEditingTitle(false);
+                }
+              }}
+              autoFocus
+              style={{
+                fontSize: '16px',
+                fontWeight: 600,
+                background: 'rgba(30, 41, 59, 0.6)',
+                border: '1px solid rgba(108, 99, 255, 0.5)',
+                borderRadius: '6px',
+                color: '#E6EEF8',
+                padding: '6px 12px',
+                outline: 'none',
+                minWidth: '200px'
+              }}
+            />
+          ) : (
+            <h1 
+              onClick={() => {
+                setEditedTitle(purposeData?.title || 'Untitled Map');
+                setIsEditingTitle(true);
+              }}
+              style={{
+                margin: 0,
+                fontSize: '16px',
+                fontWeight: 600,
+                color: '#E6EEF8',
+                cursor: 'pointer',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'rgba(108, 99, 255, 0.1)'}
+              onMouseLeave={(e) => e.target.style.background = 'transparent'}
+            >
+              {purposeData?.title || 'Untitled Map'}
+            </h1>
+          )}
+        </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           {['all', 'private', 'public', 'abstract'].map(mode => (
             <button
@@ -951,9 +1102,14 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
         onExportPNG={handleExportPNG}
         onShowPurpose={() => setShowPurposeModal(true)}
         onShowLegend={() => setShowLegend(true)}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={historyIndex > 0}
+        canRedo={historyIndex < history.length - 1}
         tool={tool}
         onToolChange={setTool}
       />
+      
 {/* Zoom Controls - Bottom Right */}
       <div style={{
         position: 'absolute',
@@ -1340,6 +1496,19 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
           onClose={() => setShowLegend(false)}
         />
       )}
+       {/* Copyright Footer */}
+      <div style={{
+        position: 'absolute',
+        bottom: '10px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        fontSize: '11px',
+        color: '#475569',
+        zIndex: 50,
+        pointerEvents: 'none'
+      }}>
+        © 2025 Oceanyx · Brian Chan
+      </div>
     </div>
   );
 }

@@ -204,7 +204,7 @@ const handleUpdateEdge = async (edgeId, updates) => {
   };
 
   return (
-    <div style={{ position: 'fixed', right: 0, top: '60px', bottom: 0, width: '500px', background: '#0F1724', boxShadow: '-4px 0 24px rgba(0,0,0,0.3)', zIndex: 2000, display: 'flex', flexDirection: 'column', color: '#E6EEF8' }}>
+    <div style={{ position: 'fixed', right: 0, top: '80px', bottom: 0, width: '500px', background: '#0F1724', boxShadow: '-4px 0 24px rgba(0,0,0,0.3)', zIndex: 2000, display: 'flex', flexDirection: 'column', color: '#E6EEF8' }}>
       {/* Header */}
       <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>

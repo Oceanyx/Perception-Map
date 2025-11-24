@@ -1,7 +1,7 @@
 // src/components/PurposeScreen.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, ArrowRight, Upload, Github, Linkedin, Mail, Coffee } from 'lucide-react';
-import logo from '../logo.PNG'
+import { Sparkles, ArrowRight, Upload, Github, Linkedin, Mail, Coffee, HelpCircle } from 'lucide-react';
+import AboutModal from './AboutModal';
 
 export default function PurposeScreen({ onComplete, onSkip }) {
   const [formData, setFormData] = useState({
@@ -10,6 +10,7 @@ export default function PurposeScreen({ onComplete, onSkip }) {
     currentState: '',
     orientationQuestion: ''
   });
+  const [showAbout, setShowAbout] = useState(false);
   const canvasRef = useRef(null);
   const mousePos = useRef({ x: 0, y: 0 });
   const creatures = useRef([]);
@@ -225,7 +226,7 @@ export default function PurposeScreen({ onComplete, onSkip }) {
         gap: '12px'
       }}>
         <img 
-          src={logo}
+          src="/logo.PNG"
           alt="Chroma Logo" 
           style={{
             width: '48px',
@@ -556,6 +557,41 @@ export default function PurposeScreen({ onComplete, onSkip }) {
           </button>
         </form>
       </div>
+      {/* What's This Button - Bottom Left */}
+      <button
+        onClick={() => setShowAbout(true)}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '20px',
+          zIndex: 2,
+          padding: '14px',
+          background: 'linear-gradient(135deg, rgba(108, 99, 255, 0.2) 0%, rgba(77, 159, 255, 0.1) 100%)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(108, 99, 255, 0.3)',
+          borderRadius: '50%',
+          color: '#6C63FF',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.2s',
+          boxShadow: '0 4px 12px rgba(108, 99, 255, 0.2)'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.transform = 'scale(1.1)';
+          e.target.style.boxShadow = '0 6px 20px rgba(108, 99, 255, 0.4)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.transform = 'scale(1)';
+          e.target.style.boxShadow = '0 4px 12px rgba(108, 99, 255, 0.2)';
+        }}
+      >
+        <HelpCircle size={28} />
+      </button>
+
+      {/* About Modal */}
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
 
       {/* Footer - Socials & Copyright */}
       <div style={{
@@ -598,7 +634,7 @@ export default function PurposeScreen({ onComplete, onSkip }) {
           color: '#64748B',
           textAlign: 'right'
         }}>
-          © 2024 Oceanyx · Brian Chan
+          © 2025 Oceanyx · Brian Chan
         </div>
       </div>
     </div>
