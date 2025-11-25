@@ -8,6 +8,7 @@ import LensManager from './LensManager';
 import LeftSidebar from './LeftSidebar';
 import PurposeModal from './PurposeModal';
 import LegendModal from './LegendModal';
+import PreferencesModal from './PreferencesModal';
 import { domainColors, defaultLenses, modes, predefinedMetaTags, connectionTypes} from '../seedData';
 import { 
   db, 
@@ -58,7 +59,11 @@ export default function CanvasView({purposeData}) {
     const saved = localStorage.getItem('chroma-theme');
     return saved || 'dark';
   });
-
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [nodeDetailMode, setNodeDetailMode] = useState(() => {
+    return localStorage.getItem('chroma-node-detail-mode') || 'sidebar';
+  });
+  const [showNodeModal, setShowNodeModal] = useState(false);
   // Save theme preference when it changes
   useEffect(() => {
     localStorage.setItem('chroma-theme', theme);
@@ -203,6 +208,17 @@ useEffect(() => {
   return () => window.removeEventListener('keydown', handleKeyboard);
 }, [handleUndo, handleRedo]);
 
+  // Close preferences with ESC
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showPreferences) {
+        setShowPreferences(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showPreferences]);
+  
   // Save initial state to history
   useEffect(() => {
     if (nodes.length > 0 && history.length === 0) {
@@ -340,11 +356,15 @@ useEffect(() => {
 };
 
   const handleNodeClick = (node, e) => {
-    e.stopPropagation();
-    if (node.type === 'content' && tool === 'select') {
-      setSelectedNodeId(node.id);
+  e.stopPropagation();
+  if (node.type === 'content' && tool === 'select') {
+    setSelectedNodeId(node.id);
+    // If preference is set to modal, open in modal mode
+    if (nodeDetailMode === 'modal') {
+      setShowNodeModal(true);
     }
-  };
+  }
+};
 
   const handleNodeHover = (node) => {
     if (node.type === 'content') {
@@ -1063,6 +1083,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
         canRedo={historyIndex < history.length - 1}
         tool={tool}
         onToolChange={setTool}
+        onShowPreferences={() => setShowPreferences(true)}
       />
 
 {/* Bottom Right Controls */}
@@ -1638,7 +1659,7 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
         </div>
       </div>
 
-      {selectedNode && (
+      {selectedNode && nodeDetailMode === 'sidebar' && (
         <NodeDetailPanel
           key={selectedNode.id}
           node={selectedNode}
@@ -1686,6 +1707,13 @@ const handleUpdateEdge = useCallback(async (edgeId, updates) => {
         <LegendModal
           lenses={lenses}
           onClose={() => setShowLegend(false)}
+        />
+      )}
+      {showPreferences && (
+        <PreferencesModal
+          onClose={() => setShowPreferences(false)}
+          nodeDetailMode={nodeDetailMode}
+          onSave={(mode) => setNodeDetailMode(mode)}
         />
       )}
        {/* Copyright Footer */}
