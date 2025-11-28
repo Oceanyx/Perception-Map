@@ -1,143 +1,122 @@
 # Perception Map — Version 1 (Discontinued)
 
-*A personal cognitive-mapping tool exploring how we perceive, interpret, and experience internal events.*
+This was my first attempt at making a tool for mapping perception.
+V1 helped me figure out what the project actually *was*, but the structure didn’t quite hold up, so I’m documenting it here before moving on to V2.
 
 ---
 
-## 📌 Summary
+## What V1 Tried to Do
 
-Perception Map V1 was the first attempt to create a structured, visual interface for breaking down a user’s perception into three distinct domains:
+The idea was simple:
 
-* **Private** — Inner sensations, feelings, intuitions
-* **Public** — Outward expressions, interactions, social dynamics
-* **Abstract** — Conceptual frameworks influencing interpretation
+When you notice a perception happening — a reaction, a thought, a shift, whatever — you could map it visually by placing pieces of it into three categories:
 
-This early version used a spatial “three-circle playground” where each domain had its own area. Users created nodes inside these circles to document perception elements and draw connections between them.
+* **Private** (internal sensations / emotions)
+* **Public** (behaviors / interactions)
+* **Abstract** (concepts / interpretations / frameworks)
 
-V1 established core concepts but revealed architectural and cognitive limitations that led to its discontinuation.
+The UI was a big canvas with three circles.
+You dropped a node into whichever circle it belonged to, and then connected nodes together if they related.
 
----
-
-## 🎯 Purpose of V1
-
-The intention behind V1 was:
-
-> To help users visually dissect a moment of perception by placing internal and external elements into a map of three domains.
-
-It aimed to make invisible mental processes *visible, manageable, and reflectable*.
+It worked in a basic sense. But the more I used it, the more I realized the structure was too rigid for how perception actually shows up.
 
 ---
 
-## 🛠️ Key Features in V1
+## What Nodes Could Contain
 
-### ✔ Domain-Based Playground
+Each node had:
 
-A canvas divided into three circles representing Private, Public, and Abstract.
+* some text (the actual content)
+* a domain (decided by which circle you dropped it into)
+* an optional lens (like “psychological,” “relational,” etc.)
+* an optional interpretation or reflection
 
-### ✔ Node Creation
-
-Each node included:
-
-* Text body
-* Domain tag (based on placement)
-* Optional lens (interpretive framework)
-* Optional interpretation
-
-### ✔ Visual Connections
-
-Users could draw links between nodes to illustrate relationships or influences.
-
-### ✔ Minimal Node Detail Panel
-
-Selecting a node opened a side panel for editing text, tags, interpretations, and metadata.
+Pretty minimal, pretty manual.
 
 ---
 
-## 🚧 Why Version 1 Was Discontinued
+## Why I Ultimately Stopped Working on V1
 
-### 1. High Cognitive Load
-
-The system required too much mental effort: choosing domains, interpreting nodes, manually linking elements.
-
-### 2. Rigid Spatial Domains
-
-Tying domains to physical locations made complex or overlapping experiences difficult to map.
-
-### 3. Forced Interpretation
-
-The UI accidentally pressured users to interpret everything, even when they had no clarity yet.
-
-### 4. Missing Meta-Pattern Structure
-
-There was no way to represent cross-instance insights, recurring themes, or high-level patterns.
-
-### 5. Not Scalable
-
-The architecture didn’t support multiple perception instances, persistent storage, syncing, or larger cognitive maps.
+Main reasons:
 
 ---
 
-## 📼 Placeholder for V1 Demo Video
+### 1. The three-circle layout ended up being more confusing than helpful
 
-> **[INSERT VIDEO HERE]**
-> *A walkthrough describing V1, its goals, design, and why it was ultimately restructured.*
+Perception isn’t spatial, but the UI forced it to be.
 
----
+### 2. Too much cognitive effort
 
-## 📚 Lessons from V1
+You had to think *about* how to map before you could map anything.
 
-V1 clarified several principles that led to the redesigned V2 architecture:
+### 3. Everything felt over-determined
 
-* Domains should be **attributes**, not **locations**.
-* Interpretation should be **optional**.
-* Mapping must support **real-time experience**, not abstract diagramming.
-* Meta-patterns must exist **across** nodes and moments.
-* The tool needs a more **fluid**, **user-centered**, and **scalable** system.
+Some experiences don’t want interpretation, but the UI nudged you to add one anyway.
 
----
+### 4. No good way to represent patterns across moments
 
-## 🚀 Status
+Everything was stuck inside one perception instance, with no real “zoom out” view.
 
-* **Version:** V1 (Discontinued)
-* **Purpose:** Documentation / Portfolio
-* **Successor:** *Perception Map V2* (In development)
+### 5. Architecturally, it didn’t scale
+
+One playground = one moment.
+No clear way to store or revisit multiple moments.
+
+All of this pushed me toward redesigning the whole thing instead of trying to force V1 forward.
 
 ---
 
-# Perception Map — Starter
+## Placeholder for Video Overview
 
-This repository also includes the **starter scaffold** used to run the Perception Map Playground during development.
+> **[Add Video Here]**
+> I’ll link a walkthrough of V1 and explain what worked, what didn’t, and why I’m rebuilding it.
 
-## 🔧 How to Run
+---
 
-1. Install dependencies:
+## What I Learned from V1
 
-   ```bash
-   npm install
-   ```
-2. Run dev server:
+A few principles that shaped V2:
 
-   ```bash
-   npm run dev
-   ```
+* Domains shouldn’t be literal spaces — they should be simple tags.
+* Not every node needs a lens or interpretation.
+* The UI shouldn’t pressure the user to “figure things out” prematurely.
+* Real insight comes from connecting multiple perception instances, not over-polishing one.
+* Flexibility > structure.
 
-## 🧰 Tech Stack
+---
 
-This project uses:
+## Project Status
 
-* **Vite**
-* **React**
-* **Tailwind CSS**
-* **React Flow** (for node-based visual mapping)
-* **Dexie** (IndexedDB wrapper for local storage)
+* **V1:** Archived / reference only
+* **V2:** Being designed from scratch
+* **Purpose of this repo:** Portfolio and documentation
 
-## 📁 Project Notes
+---
 
-The starter includes minimal files required to get the playground working.
-You can extend `CanvasView` to add:
+# Perception Map — Starter Scaffold
 
-* Lens styling
-* Domain overlays
-* Visual connection logic
-* Node detail enhancements
-* Pattern-level mappings
+This repo also includes a minimal starter so the playground can run.
+
+## How to Run
+
+1. `npm install`
+2. `npm run dev`
+
+Tech used:
+
+* Vite
+* React
+* Tailwind
+* React Flow
+* Dexie (for local IndexedDB storage)
+
+## Notes
+
+This starter is intentionally barebones.
+You can expand `CanvasView` to add:
+
+* lens visuals
+* domain overlays
+* connection logic
+* node editing panel
+* anything else you want to experiment with
